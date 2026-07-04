@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getSesion, setSesion, type Yo } from "@/lib/api";
+import { getSesion, logout, type Yo } from "@/lib/api";
 
 const ROL_LABEL: Record<string, string> = {
   recepcion: "Recepción",
@@ -34,9 +34,7 @@ export default function AppShell({
   }, [router]);
 
   function salir() {
-    setSesion(null);
-    localStorage.removeItem("halu_yo");
-    router.replace("/login");
+    logout(); // limpia sesión + cookies y navega a /login
   }
 
   return (

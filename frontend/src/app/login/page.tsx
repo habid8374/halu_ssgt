@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { apiFetch, login, type Yo } from "@/lib/api";
+import { apiFetch, login, setYo, type Yo } from "@/lib/api";
 
 const RUTA_POR_ROL: Record<string, string> = {
   recepcion: "/recepcion",
@@ -25,8 +25,9 @@ export default function LoginPage() {
     try {
       await login(email, password);
       const yo = await apiFetch<Yo>("/me/");
-      localStorage.setItem("halu_yo", JSON.stringify(yo));
-      router.push(RUTA_POR_ROL[yo.rol] ?? "/");
+      setYo(yo); // guarda identidad + cookie de rol para el middleware
+      router.push(RUTA_POR_ROL[yo.rol] ?? "/login");
+      router.refresh();
     } catch {
       setError("Correo o contraseña incorrectos.");
       setCargando(false);

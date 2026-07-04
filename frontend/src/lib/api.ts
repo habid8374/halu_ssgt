@@ -23,8 +23,27 @@ export function getSesion(): Sesion | null {
 }
 
 export function setSesion(s: Sesion | null) {
-  if (s) localStorage.setItem("halu_sesion", JSON.stringify(s));
-  else localStorage.removeItem("halu_sesion");
+  if (s) {
+    localStorage.setItem("halu_sesion", JSON.stringify(s));
+    // Marcador para el middleware (server-side no ve localStorage).
+    document.cookie = "halu_auth=1; path=/; max-age=86400; samesite=lax";
+  } else {
+    localStorage.removeItem("halu_sesion");
+    localStorage.removeItem("halu_yo");
+    document.cookie = "halu_auth=; path=/; max-age=0";
+    document.cookie = "halu_rol=; path=/; max-age=0";
+  }
+}
+
+export function setYo(yo: Yo) {
+  localStorage.setItem("halu_yo", JSON.stringify(yo));
+  document.cookie = `halu_rol=${yo.rol}; path=/; max-age=86400; samesite=lax`;
+}
+
+/** Cierra la sesión y regresa al login. */
+export function logout() {
+  setSesion(null);
+  window.location.href = "/login";
 }
 
 export async function login(email: string, password: string): Promise<Sesion> {
@@ -50,6 +69,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     },
   });
   if (res.status === 401) {
+    // Token vencido o inválido: limpiar sesión y volver al login.
     setSesion(null);
     if (typeof window !== "undefined") window.location.href = "/login";
     throw new Error("Sesión expirada");
