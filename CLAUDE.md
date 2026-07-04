@@ -104,9 +104,34 @@ No adelantar fases: por ejemplo, no construir el motor RIPS en fase 1.
 
 ---
 
-## 8. Qué preguntar antes de asumir
+## 8. Operación multi-tenant y UX (decisiones tomadas, no reabrir)
+
+1. **El tenant (IPS) se resuelve SIEMPRE por dominio/subdominio** (django-tenants,
+   un esquema por IPS). Nunca hay selector de IPS en el login: si un usuario entra
+   por el dominio de la IPS 1, autentica contra el esquema de la IPS 1 y TODOS sus
+   datos quedan amarrados a ese esquema; ídem para la IPS 2 en su dominio. El
+   frontend usa el hostname actual del navegador para construir las URLs de API y
+   WebSocket (nunca hosts fijos), de modo que el mismo build sirve a todas las IPS.
+2. **Los JWT van amarrados al tenant** (claim `schema`, ver `apps/usuarios/jwt.py`):
+   un token emitido por una IPS es inválido en cualquier otra, tanto en la API
+   (TenantJWTAuthentication) como en el WebSocket (ws_middleware). No eliminar
+   esta validación.
+3. **Administración de IPS y dominios**: solo desde el admin de Django del esquema
+   público, en un dominio dedicado (dev: `admin.localhost:8000/admin`; producción:
+   subdominio de administración). Las entradas de IPS/Dominio no son visibles desde
+   el admin de un tenant. La historia clínica y el concepto NUNCA se registran en
+   el admin (el control fino de acceso y auditoría vive exclusivamente en la API).
+4. **Navegación por sidebar según rol**: los usuarios finales (profesionales de la
+   salud y administrativos) nunca navegan escribiendo URLs. Toda vista alcanzable
+   debe tener entrada en el sidebar de su rol (`frontend/src/components/AppShell.tsx`),
+   y el middleware de Next.js redirige cualquier URL fuera del rol al home del rol
+   (o a `/login` sin sesión). La única ruta pública es `/pantalla/[sede]` (TV de
+   sala de espera).
+
+---
+
+## 9. Qué preguntar antes de asumir
 
 Si una tarea toca alguno de estos puntos y no está resuelto en este documento ni en `docs/arquitectura_sistema_salud_ocupacional.md`, preguntar antes de implementar:
-- Multi-tenant por esquema vs. por base de datos separada (definir según número de IPS cliente esperado).
-- Proveedor de almacenamiento de objetos para documentos adjuntos.
+- Proveedor de almacenamiento de objetos para documentos adjuntos (por ahora: abstraído con django-storages; FileSystem en dev, S3-compatible por env).
 - Si la IPS objetivo inicial atiende accidentes de trabajo (activa fase 3 RIPS) o no.

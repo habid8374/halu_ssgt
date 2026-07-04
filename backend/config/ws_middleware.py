@@ -35,6 +35,9 @@ def _resolver_usuario(schema_name: str, token: str):
 
     try:
         access = AccessToken(token)
+        # El token debe haber sido emitido para ESTE tenant (claim "schema").
+        if access.get("schema") != schema_name:
+            return AnonymousUser()
         with schema_context(schema_name):
             return get_user_model().objects.get(pk=access["user_id"])
     except Exception:

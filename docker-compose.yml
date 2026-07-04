@@ -44,6 +44,7 @@ services:
     # que Git en Windows introduce al clonar y que rompen /bin/sh.
     command: >
       sh -c "python manage.py migrate_schemas --noinput &&
+             python manage.py collectstatic --noinput &&
              python manage.py seed_demo &&
              daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     volumes:

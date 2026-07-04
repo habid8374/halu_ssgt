@@ -25,13 +25,24 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "we
 CRYPTOGRAPHY_KEY = env("CRYPTOGRAPHY_KEY", default=SECRET_KEY)
 
 # --- django-tenants: separación de apps ------------------------------------
-# SHARED_APPS viven en el esquema public (routing de tenants).
-# TENANT_APPS viven en el esquema de cada IPS (datos clínicos y operativos).
+# SHARED_APPS viven en el esquema public; TENANT_APPS en el esquema de cada IPS.
+# El esquema público también lleva auth/admin/usuarios para poder administrar
+# las IPS y sus dominios desde el admin de Django (dominio dedicado, p. ej.
+# admin.localhost en dev). Los datos clínicos/operativos reales SOLO viven en
+# los esquemas de cada IPS.
 SHARED_APPS = [
     "django_tenants",          # debe ir primero
     "apps.tenants",            # modelo IPS (tenant) + Dominio
     "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.admin",
+    "django.contrib.sessions",
+    "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.usuarios",           # requerido por AUTH_USER_MODEL en public
+    "apps.atenciones",         # dependencia de FK de usuarios (sede/empresa)
+    "apps.historia_clinica",
+    "apps.accidentes",
 ]
 
 TENANT_APPS = [
@@ -58,6 +69,7 @@ MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",  # primero: resuelve el esquema
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -112,7 +124,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # --- DRF -------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # JWT con validación de tenant: el token queda amarrado al esquema
+        # de la IPS que lo emitió (apps.usuarios.jwt).
+        "apps.usuarios.jwt.TenantJWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
@@ -152,10 +166,12 @@ if STORAGE_BACKEND == "s3":
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# --- CORS (Next.js dev) ----------------------------------------------------
-CORS_ALLOWED_ORIGINS = env.list(
-    "CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"]
-)
+# --- CORS -------------------------------------------------------------------
+# Multi-tenant: cada IPS entra por su propio dominio, así que el frontend
+# puede originarse en N hosts. En producción se permite por regex (p. ej.
+# ^https://[a-z0-9-]+\.halu\.co$). En dev, dev.py abre todos los orígenes.
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", default=[])
 
 # --- Internacionalización --------------------------------------------------
 LANGUAGE_CODE = "es-co"

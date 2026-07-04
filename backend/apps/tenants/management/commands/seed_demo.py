@@ -2,34 +2,50 @@
 Datos de demostración para desarrollo. Idempotente: se puede correr N veces.
 
 Crea:
-  - Tenant público (routing) y tenant "demo" mapeado a localhost.
-  - Sede Principal con 2 consultorios.
-  - Usuarios por rol (password: demo1234):
-      recepcion@demo.com, medico@demo.com, coordinador@demo.com, empresa@demo.com
-  - Médico con licencia SST vigente y validada.
-  - 2 empresas cliente, 8 trabajadores y atenciones en varios estados
-    para que el tablero se vea vivo.
+  - Tenant público + dominio de administración (admin.localhost) con
+    superusuario admin@halu.co / admin1234 para gestionar IPS y dominios.
+  - IPS "demo"  -> localhost / 127.0.0.1  (IPS Demo Salud Ocupacional)
+  - IPS "demo2" -> demo2.localhost        (IPS Norte SST) — demuestra el
+    aislamiento multi-tenant: cada dominio ve SOLO sus datos.
+  - En cada IPS: sede, consultorios, usuarios por rol (password demo1234),
+    médico con licencia SST vigente, empresas, trabajadores y atenciones.
 
 NUNCA usar en producción (los datos y contraseñas son de juguete).
 """
 import datetime as dt
 
 from django.core.management.base import BaseCommand
-from django_tenants.utils import schema_context
+from django_tenants.utils import get_public_schema_name, schema_context
 
 from apps.tenants.models import IPS, Dominio
 
 
 class Command(BaseCommand):
-    help = "Crea tenant demo + datos de ejemplo para el tablero (solo desarrollo)."
+    help = "Crea tenants demo + datos de ejemplo (solo desarrollo)."
 
     def handle(self, *args, **options):
-        # --- 1. Tenants ----------------------------------------------------
+        # --- 1. Tenant público + admin de plataforma ------------------------
         publico, _ = IPS.objects.get_or_create(
-            schema_name="public",
-            defaults={"nombre": "Public", "nit": "000000000-0"},
+            schema_name=get_public_schema_name(),
+            defaults={"nombre": "Plataforma Halu", "nit": "000000000-0"},
         )
-        demo, creado = IPS.objects.get_or_create(
+        Dominio.objects.get_or_create(
+            domain="admin.localhost", defaults={"tenant": publico, "is_primary": True}
+        )
+        with schema_context(get_public_schema_name()):
+            from apps.usuarios.models import Usuario
+
+            if not Usuario.objects.filter(email="admin@halu.co").exists():
+                Usuario.objects.create_superuser(
+                    email="admin@halu.co", password="admin1234",
+                    nombre_completo="Admin Plataforma",
+                )
+        self.stdout.write(self.style.SUCCESS(
+            "Admin de plataforma: http://admin.localhost:8000/admin (admin@halu.co / admin1234)"
+        ))
+
+        # --- 2. IPS demo (localhost) ----------------------------------------
+        demo, _ = IPS.objects.get_or_create(
             schema_name="demo",
             defaults={"nombre": "IPS Demo Salud Ocupacional", "nit": "900123456-7"},
         )
@@ -37,25 +53,67 @@ class Command(BaseCommand):
             Dominio.objects.get_or_create(
                 domain=host, defaults={"tenant": demo, "is_primary": host == "localhost"}
             )
-        self.stdout.write(self.style.SUCCESS(f"Tenant demo {'creado' if creado else 'ya existía'}."))
-
-        # --- 2. Datos dentro del esquema demo -------------------------------
         with schema_context("demo"):
-            self._seed_demo()
+            self._seed_ips(
+                dominio_correo="demo.com",
+                sede_nombre="Sede Principal",
+                empresas=[
+                    ("Constructora Andina S.A.S.", "800111222-3"),
+                    ("Alimentos del Valle Ltda.", "800444555-6"),
+                ],
+                trabajadores=[
+                    (0, "1010101010", "Juan", "Pérez Gómez", "Oficial de obra"),
+                    (0, "1010101011", "María", "Rodríguez López", "Maestra de obra"),
+                    (0, "1010101012", "Carlos", "Sánchez Díaz", "Ayudante"),
+                    (0, "1010101013", "Luisa", "Martínez Vega", "Ingeniera residente"),
+                    (1, "2020202020", "Andrés", "Castro Ruiz", "Operario de planta"),
+                    (1, "2020202021", "Paola", "Jiménez Torres", "Supervisora de calidad"),
+                    (1, "2020202022", "Diego", "Moreno Silva", "Auxiliar de bodega"),
+                    (1, "2020202023", "Sandra", "Gil Ramírez", "Analista de laboratorio"),
+                ],
+            )
 
-    def _seed_demo(self):
+        # --- 3. IPS demo2 (demo2.localhost): aislamiento multi-tenant -------
+        demo2, _ = IPS.objects.get_or_create(
+            schema_name="demo2",
+            defaults={"nombre": "IPS Norte SST", "nit": "901987654-3"},
+        )
+        Dominio.objects.get_or_create(
+            domain="demo2.localhost", defaults={"tenant": demo2, "is_primary": True}
+        )
+        with schema_context("demo2"):
+            self._seed_ips(
+                dominio_correo="demo2.com",
+                sede_nombre="Sede Norte",
+                empresas=[
+                    ("Minera del Norte S.A.", "890555666-1"),
+                    ("Transportes La Sabana S.A.S.", "890777888-2"),
+                ],
+                trabajadores=[
+                    (0, "3030303030", "Elena", "Vargas Prieto", "Geóloga"),
+                    (0, "3030303031", "Óscar", "Rincón Mesa", "Operador de maquinaria"),
+                    (1, "4040404040", "Lucía", "Camargo Peña", "Conductora"),
+                    (1, "4040404041", "Felipe", "Núñez Rey", "Despachador"),
+                ],
+            )
+
+        self.stdout.write(self.style.SUCCESS(
+            "Tenants demo listos: localhost (IPS Demo) y demo2.localhost (IPS Norte SST)."
+        ))
+
+    # ------------------------------------------------------------------
+    def _seed_ips(self, dominio_correo, sede_nombre, empresas, trabajadores):
         from apps.atenciones.models import (
             Atencion,
             Consultorio,
             Empresa,
-            EstadoAtencion,
             Sede,
             Trabajador,
         )
         from apps.usuarios.models import LicenciaSST, Profesional, Usuario
         from apps.usuarios.roles import Rol
 
-        sede, _ = Sede.objects.get_or_create(nombre="Sede Principal", defaults={"codigo": "SP"})
+        sede, _ = Sede.objects.get_or_create(nombre=sede_nombre)
         c1, _ = Consultorio.objects.get_or_create(sede=sede, nombre="Consultorio 1")
         c2, _ = Consultorio.objects.get_or_create(sede=sede, nombre="Consultorio 2")
 
@@ -67,19 +125,19 @@ class Command(BaseCommand):
                 )
             return u
 
-        recepcion = usuario("recepcion@demo.com", "Rosa Recepción", Rol.RECEPCION, sede=sede)
-        medico = usuario("medico@demo.com", "Dr. Mario Médico", Rol.MEDICO, sede=sede)
-        usuario("coordinador@demo.com", "Carla Coordinadora", Rol.COORDINADOR)
+        recepcion = usuario(f"recepcion@{dominio_correo}", "Rosa Recepción", Rol.RECEPCION, sede=sede)
+        medico = usuario(f"medico@{dominio_correo}", "Dr. Mario Médico", Rol.MEDICO, sede=sede)
+        usuario(f"coordinador@{dominio_correo}", "Carla Coordinadora", Rol.COORDINADOR)
 
-        empresa1, _ = Empresa.objects.get_or_create(
-            nit="800111222-3", defaults={"nombre": "Constructora Andina S.A.S."}
+        objetos_empresa = []
+        for nombre, nit in empresas:
+            e, _ = Empresa.objects.get_or_create(nit=nit, defaults={"nombre": nombre})
+            objetos_empresa.append(e)
+        usuario(
+            f"empresa@{dominio_correo}", f"Portal {objetos_empresa[0].nombre}",
+            Rol.EMPRESA_CLIENTE, empresa=objetos_empresa[0],
         )
-        empresa2, _ = Empresa.objects.get_or_create(
-            nit="800444555-6", defaults={"nombre": "Alimentos del Valle Ltda."}
-        )
-        usuario("empresa@demo.com", "Portal Constructora Andina", Rol.EMPRESA_CLIENTE, empresa=empresa1)
 
-        # Médico con licencia SST vigente (regla 5) para poder firmar conceptos.
         prof, _ = Profesional.objects.get_or_create(
             usuario=medico, defaults={"tipo": "medico", "registro_profesional": "RM-12345"}
         )
@@ -94,56 +152,44 @@ class Command(BaseCommand):
             },
         )
 
-        trabajadores_data = [
-            (empresa1, "1010101010", "Juan", "Pérez Gómez", "Oficial de obra"),
-            (empresa1, "1010101011", "María", "Rodríguez López", "Maestra de obra"),
-            (empresa1, "1010101012", "Carlos", "Sánchez Díaz", "Ayudante"),
-            (empresa1, "1010101013", "Luisa", "Martínez Vega", "Ingeniera residente"),
-            (empresa2, "2020202020", "Andrés", "Castro Ruiz", "Operario de planta"),
-            (empresa2, "2020202021", "Paola", "Jiménez Torres", "Supervisora de calidad"),
-            (empresa2, "2020202022", "Diego", "Moreno Silva", "Auxiliar de bodega"),
-            (empresa2, "2020202023", "Sandra", "Gil Ramírez", "Analista de laboratorio"),
-        ]
-        trabajadores = []
-        for empresa, doc, nombres, apellidos, cargo in trabajadores_data:
+        objetos_trabajador = []
+        for idx_empresa, doc, nombres, apellidos, cargo in trabajadores:
             t, _ = Trabajador.objects.get_or_create(
                 tipo_documento="CC",
                 numero_documento=doc,
                 defaults={
-                    "empresa": empresa, "nombres": nombres,
+                    "empresa": objetos_empresa[idx_empresa], "nombres": nombres,
                     "apellidos": apellidos, "cargo": cargo,
                 },
             )
-            trabajadores.append(t)
+            objetos_trabajador.append(t)
 
         if Atencion.objects.exists():
-            self.stdout.write("Atenciones demo ya existen; no se duplican.")
             return
 
-        # Atenciones repartidas por estados para que el tablero se vea vivo.
-        # Se crean vía cambiar_estado() para respetar la máquina de estados
-        # y dejar HistorialEstado coherente.
+        tipos = ["pre_ingreso", "periodico", "egreso", "retorno_laboral"]
         planes = [
-            ("pre_ingreso", []),                                            # registrado
-            ("periodico", ["espera"]),
-            ("pre_ingreso", ["espera"]),
-            ("egreso", ["espera", "llamado"]),
-            ("periodico", ["espera", "llamado", "atencion"]),
-            ("pre_ingreso", ["espera", "llamado", "atencion", "paraclinicos"]),
-            ("periodico", ["espera", "llamado", "atencion", "finalizado"]),
-            ("retorno_laboral", ["espera"]),
+            [],                                              # registrado
+            ["espera"],
+            ["espera", "llamado"],
+            ["espera", "llamado", "atencion"],
+            ["espera"],
+            ["espera", "llamado", "atencion", "paraclinicos"],
+            ["espera", "llamado", "atencion", "finalizado"],
+            ["espera"],
         ]
-        for t, (tipo, pasos) in zip(trabajadores, planes):
+        for i, t in enumerate(objetos_trabajador):
             a = Atencion.objects.create(
                 trabajador=t, empresa=t.empresa, sede=sede,
-                consultorio=c1 if t.empresa_id % 2 else c2,
-                tipo_examen=tipo, profesional_asignado=medico, creado_por=recepcion,
+                consultorio=c1 if i % 2 else c2,
+                tipo_examen=tipos[i % len(tipos)],
+                profesional_asignado=medico, creado_por=recepcion,
             )
-            for paso in pasos:
-                usuario_paso = recepcion if paso in {"espera", "llamado"} else medico
-                a.cambiar_estado(paso, usuario_paso, nota="seed demo")
+            for paso in planes[i % len(planes)]:
+                quien = recepcion if paso in {"espera", "llamado"} else medico
+                a.cambiar_estado(paso, quien, nota="seed demo")
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Seed demo listo: {Atencion.objects.count()} atenciones en sede '{sede.nombre}'."
-        ))
-        self.stdout.write("Usuarios (password demo1234): recepcion@ / medico@ / coordinador@ / empresa@demo.com")
+        self.stdout.write(
+            f"  {sede_nombre}: {Atencion.objects.count()} atenciones, "
+            f"usuarios *@{dominio_correo} (password demo1234)"
+        )

@@ -43,10 +43,21 @@ docker-compose.yml   # db, redis, web (Daphne/ASGI), worker, beat
 ```bash
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
-docker compose up --build
-# Migraciones multi-tenant (tras aprobar el diseño de modelos):
-#   docker compose exec web python manage.py migrate_schemas --shared
+docker compose up --build      # migra + siembra datos demo + levanta la API
+cd frontend && npm install && npm run dev
 ```
+
+### Accesos de desarrollo (multi-tenant por dominio)
+
+| URL | Qué es | Credenciales |
+|---|---|---|
+| http://localhost:3000 | IPS Demo Salud Ocupacional | `recepcion@demo.com` · `medico@demo.com` · `coordinador@demo.com` · `empresa@demo.com` (pass `demo1234`) |
+| http://demo2.localhost:3000 | IPS Norte SST (segunda IPS: aislamiento) | mismos roles con `@demo2.com` (pass `demo1234`) |
+| http://admin.localhost:8000/admin | Admin de plataforma (gestionar IPS y dominios) | `admin@halu.co` / `admin1234` |
+| http://localhost:3000/pantalla/1 | Pantalla pública de sala de espera | sin login |
+
+El tenant se resuelve por dominio: cada IPS ve exclusivamente sus datos y los
+JWT quedan amarrados a su esquema (claim `schema`). Ver CLAUDE.md §8.
 
 ## Alcance de fase 1
 

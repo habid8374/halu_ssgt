@@ -1,5 +1,22 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
-export const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000/ws";
+/**
+ * Multi-tenant por dominio: la API y el WebSocket usan SIEMPRE el mismo
+ * hostname con el que el usuario entró (localhost → IPS demo,
+ * demo2.localhost → IPS Norte, ips-x.halu.co → IPS X en producción).
+ * Así el backend (django-tenants) resuelve el esquema correcto y todos los
+ * datos quedan amarrados a esa IPS sin selector manual en el login.
+ * Las variables NEXT_PUBLIC_* siguen disponibles como override explícito.
+ */
+function hostActual(): string {
+  return typeof window !== "undefined" ? window.location.hostname : "localhost";
+}
+
+function apiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? `http://${hostActual()}:8000/api`;
+}
+
+export function wsUrl(): string {
+  return process.env.NEXT_PUBLIC_WS_URL ?? `ws://${hostActual()}:8000/ws`;
+}
 
 // --- Sesión (JWT en localStorage; solo cliente) ----------------------------
 export interface Sesion {
@@ -47,7 +64,7 @@ export function logout() {
 }
 
 export async function login(email: string, password: string): Promise<Sesion> {
-  const res = await fetch(`${API_URL}/token/`, {
+  const res = await fetch(`${apiUrl()}/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -60,7 +77,7 @@ export async function login(email: string, password: string): Promise<Sesion> {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const sesion = getSesion();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${apiUrl()}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

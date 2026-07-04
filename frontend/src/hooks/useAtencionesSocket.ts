@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_URL, getSesion } from "@/lib/api";
+import { wsUrl, getSesion } from "@/lib/api";
 
 /**
  * Suscripción al tablero de flujo en tiempo real (Django Channels).
@@ -31,7 +31,7 @@ export function useAtencionesSocket(
   const conectar = useCallback(() => {
     const sesion = getSesion();
     const token = sesion ? `?token=${sesion.access}` : "";
-    const ws = new WebSocket(`${WS_URL}/tablero/${sedeId}/${token}`);
+    const ws = new WebSocket(`${wsUrl()}/tablero/${sedeId}/${token}`);
     wsRef.current = ws;
 
     ws.onopen = () => setConectado(true);
