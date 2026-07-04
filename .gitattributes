@@ -1,0 +1,7 @@
+# Forzar finales de línea LF en archivos que se ejecutan dentro de
+# contenedores Linux, aunque el repo se clone en Windows (autocrlf).
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+.env.example text eol=lf
