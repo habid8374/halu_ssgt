@@ -1,0 +1,98 @@
+# Halu Salud Ocupacional — entorno de desarrollo.
+#
+# Servicios:
+#   db        PostgreSQL (multi-tenant por esquema, django-tenants)
+#   redis     broker de Celery + capa de canales (Channels)
+#   web       API HTTP + WebSocket (Daphne / ASGI) — sirve el tablero en tiempo real
+#   worker    Celery worker (semáforo de tiempos, alertas de plazos)
+#   beat      Celery beat (recálculo periódico del semáforo, alertas 20 días)
+#
+# 'web' corre bajo Daphne (ASGI) para servir HTTP y los WebSockets del consumer
+# de Channels en el mismo proceso. En producción se separa Gunicorn (HTTP) de
+# Daphne/Uvicorn (WS) detrás de Nginx.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-halu_salud}
+      POSTGRES_USER: ${POSTGRES_USER:-halu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-halu}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-halu} -d ${POSTGRES_DB:-halu_salud}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: ./backend
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    volumes:
+      - ./backend:/app
+      - media:/app/media
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    command: celery -A config worker -l info
+    volumes:
+      - ./backend:/app
+      - media:/app/media
+    env_file:
+      - ./backend/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  beat:
+    build: ./backend
+    command: celery -A config beat -l info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  # Frontend Next.js (dev). Descomenta para levantarlo dentro de Compose.
+  # frontend:
+  #   build: ./frontend
+  #   command: npm run dev
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   ports:
+  #     - "3000:3000"
+  #   env_file:
+  #     - ./frontend/.env
+
+volumes:
+  pgdata:
+  media:

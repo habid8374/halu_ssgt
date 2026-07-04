@@ -1,0 +1,32 @@
+# --- Core ---
+Django==5.0.6
+djangorestframework==3.15.1
+djangorestframework-simplejwt==5.3.1
+
+# --- Multi-tenant (un esquema por IPS) ---
+django-tenants==3.6.1
+
+# --- Real-time (tablero de flujo) ---
+channels==4.1.0
+channels-redis==4.2.0
+daphne==4.1.2
+
+# --- Async tasks (semáforo de tiempos, alertas de plazos) ---
+celery==5.4.0
+redis==5.0.4
+
+# --- Cifrado a nivel de columna para campos clínicos (CLAUDE.md regla 10) ---
+# NOTA: django-cryptography no tiene release estable para Django 5; se usa el
+# fork mantenido. Si prefieres el paquete original, ver apps/historia_clinica/fields.py
+# donde el backend de cifrado está aislado tras EncryptedTextField/EncryptedCharField.
+django-cryptography-django5==2.2
+
+# --- Almacenamiento de objetos abstraído (DocumentoAdjunto) ---
+django-storages==1.14.3
+boto3==1.34.100  # backend S3-compatible (MinIO/S3), opcional según STORAGE_BACKEND
+
+# --- Infra / utilidades ---
+psycopg2-binary==2.9.9
+django-environ==0.11.2
+gunicorn==22.0.0
+django-cors-headers==4.3.1
