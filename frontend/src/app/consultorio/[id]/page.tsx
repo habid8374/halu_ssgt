@@ -1,20 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
+import Tablero from "@/components/Tablero";
+import { type Yo } from "@/lib/api";
+
 /**
- * Consultorio del médico ocupacional.
- * Rol `medico`: ve la historia clínica SOLO de sus pacientes asignados y
- * emite el concepto de aptitud. La carga de datos y el editor de historia
- * clínica se implementan tras aprobar los modelos.
+ * Cola del médico ocupacional. El backend limita el queryset a las
+ * atenciones asignadas a este profesional (matriz §4) — aquí solo se
+ * renderiza lo que la API permite ver.
  */
-export default function ConsultorioPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ConsultorioPage() {
+  const [sede, setSede] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("halu_yo");
+    if (raw) {
+      const yo = JSON.parse(raw) as Yo;
+      setSede(yo.sede ?? 1);
+    }
+  }, []);
+
   return (
-    <main className="p-6">
-      <h1 className="text-xl font-bold">Consultorio — Atención #{params.id}</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        Historia clínica ocupacional (reservada) y concepto de aptitud.
-      </p>
-    </main>
+    <AppShell titulo="Consultorio — Mi cola de atención">
+      {sede !== null ? (
+        <Tablero sedeId={sede} />
+      ) : (
+        <p className="text-sm text-slate-400">Cargando…</p>
+      )}
+    </AppShell>
   );
 }

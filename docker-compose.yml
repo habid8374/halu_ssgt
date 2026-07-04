@@ -40,7 +40,7 @@ services:
 
   web:
     build: ./backend
-    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    command: sh entrypoint.dev.sh
     volumes:
       - ./backend:/app
       - media:/app/media

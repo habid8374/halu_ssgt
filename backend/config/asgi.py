@@ -1,8 +1,8 @@
 """
 ASGI: HTTP (Django) + WebSocket (Channels) para el tablero en tiempo real.
 
-El routing WebSocket y el consumer se implementan en el paso 5 (tras aprobar
-el diseño de modelos). Aquí queda la estructura ProtocolTypeRouter lista.
+Cadena WS: AllowedHosts → resolución de tenant (IPS) → autenticación JWT →
+TableroConsumer.
 """
 import os
 
@@ -16,12 +16,15 @@ django_asgi_app = get_asgi_application()
 
 # Importar después de inicializar Django.
 from config.routing import websocket_urlpatterns  # noqa: E402
+from config.ws_middleware import JWTAuthWSMiddleware, TenantWSMiddleware  # noqa: E402
 
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
-            URLRouter(websocket_urlpatterns)
+            TenantWSMiddleware(
+                JWTAuthWSMiddleware(URLRouter(websocket_urlpatterns))
+            )
         ),
     }
 )

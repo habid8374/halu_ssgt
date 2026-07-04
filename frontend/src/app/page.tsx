@@ -1,29 +1,48 @@
-import Link from "next/link";
+"use client";
 
-const rutas = [
-  { href: "/recepcion", label: "Recepción — Tablero de flujo" },
-  { href: "/consultorio/1", label: "Consultorio (médico)" },
-  { href: "/gerencia", label: "Gerencia — Reportes" },
-  { href: "/portal-empresa", label: "Portal empresa cliente" },
-  { href: "/pantalla/1", label: "Pantalla pública (sede)" },
-];
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { getSesion } from "@/lib/api";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Sin sesión → login. Con sesión → cada quien entra por su ruta de rol.
+    if (!getSesion()) router.replace("/login");
+  }, [router]);
+
+  const rutas = [
+    { href: "/recepcion", label: "Recepción", desc: "Tablero de flujo en tiempo real", icono: "🗂️" },
+    { href: "/consultorio/1", label: "Consultorio", desc: "Cola del médico ocupacional", icono: "🩺" },
+    { href: "/gerencia", label: "Gerencia", desc: "Tablero multi-sede (solo lectura)", icono: "📊" },
+    { href: "/portal-empresa", label: "Portal empresa", desc: "Conceptos de aptitud", icono: "🏢" },
+    { href: "/pantalla/1", label: "Pantalla pública", desc: "TV de sala de espera", icono: "📺" },
+  ];
+
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-bold">Halu Salud Ocupacional</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        Fase 1 — núcleo operativo. Rutas segregadas por rol (App Router).
-      </p>
-      <ul className="mt-6 space-y-2">
+    <main className="mx-auto max-w-3xl p-8">
+      <div className="mb-8 flex items-center gap-3">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-500/15 text-2xl">🩺</span>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Halu Salud Ocupacional</h1>
+          <p className="text-sm text-slate-400">Fase 1 — núcleo operativo</p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
         {rutas.map((r) => (
-          <li key={r.href}>
-            <Link className="text-blue-600 underline" href={r.href}>
-              {r.label}
-            </Link>
-          </li>
+          <Link
+            key={r.href}
+            href={r.href}
+            className="rounded-xl border border-slate-800 bg-slate-900 p-4 transition hover:border-teal-500/50"
+          >
+            <span className="text-2xl">{r.icono}</span>
+            <p className="mt-2 font-semibold text-white">{r.label}</p>
+            <p className="text-xs text-slate-400">{r.desc}</p>
+          </Link>
         ))}
-      </ul>
+      </div>
     </main>
   );
 }

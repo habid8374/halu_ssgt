@@ -1,15 +1,30 @@
+"use client";
+
+import { useState } from "react";
+import AppShell from "@/components/AppShell";
+import Tablero from "@/components/Tablero";
+
 /**
- * Reportes gerenciales (Server Component — carga pesada del lado servidor).
- * Rol `coordinador`: tablero de todas las sedes y reportes agregados; NO ve
- * historia clínica (salvo excepción legal auditada).
+ * Vista de coordinación/gerencia: tablero de TODAS las sedes (matriz §4),
+ * en solo lectura. Los reportes agregados llegan en una fase posterior.
  */
 export default function GerenciaPage() {
+  const [sede, setSede] = useState(1);
+
   return (
-    <main className="p-6">
-      <h1 className="text-xl font-bold">Gerencia — Reportes agregados</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        Indicadores de tiempos de atención y cumplimiento SG-SST (fase posterior).
-      </p>
-    </main>
+    <AppShell titulo="Gerencia — Tablero de sedes">
+      <div className="mb-4 flex items-center gap-2">
+        <label className="text-xs text-slate-400">Sede:</label>
+        <select
+          value={sede}
+          onChange={(e) => setSede(Number(e.target.value))}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-white"
+        >
+          <option value={1}>Sede Principal</option>
+        </select>
+        <span className="text-xs text-slate-500">· Vista de solo lectura</span>
+      </div>
+      <Tablero sedeId={sede} soloLectura />
+    </AppShell>
   );
 }

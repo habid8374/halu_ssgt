@@ -1,11 +1,11 @@
-"""
-URLs raíz. Las rutas de API por dominio se montan en el paso posterior
-(vistas + permisos DRF). Aquí queda el admin y el esqueleto de /api/.
-"""
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # path("api/", include("apps.atenciones.urls")),  # tras aprobar modelos
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/", include("apps.atenciones.urls")),
+    path("api/", include("apps.historia_clinica.urls")),
 ]

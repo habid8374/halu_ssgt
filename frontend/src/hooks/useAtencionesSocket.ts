@@ -1,43 +1,60 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { WS_URL } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { WS_URL, getSesion } from "@/lib/api";
 
 /**
- * Suscripción al tablero de flujo en tiempo real (Channels).
- *
- * Se conecta al consumer de Django Channels por sede. El contrato del evento
- * (forma exacta del payload de cambio de estado) se cierra en el paso 5, junto
- * con el TableroConsumer. Este hook establece la estructura: conexión, reconexión
- * y acumulación de eventos — sin polling (CLAUDE.md §2).
+ * Suscripción al tablero de flujo en tiempo real (Django Channels).
+ * Reconexión automática con backoff simple. Nunca polling (CLAUDE.md §2).
  */
 export interface EventoAtencion {
-  atencion_id: number;
-  estado_anterior: string | null;
-  estado_nuevo: string;
-  sede_id: number;
-  consultorio_id: number | null;
-  timestamp: string;
+  type: "atencion" | "llamado" | "conectado";
+  atencion_id?: number;
+  estado_anterior?: string | null;
+  estado_nuevo?: string;
+  sede_id?: number;
+  consultorio_id?: number | null;
+  consultorio_nombre?: string | null;
+  trabajador_nombre?: string;
+  timestamp?: string;
 }
 
-export function useAtencionesSocket(sedeId: number) {
-  const [eventos, setEventos] = useState<EventoAtencion[]>([]);
+export function useAtencionesSocket(
+  sedeId: number,
+  onEvento: (e: EventoAtencion) => void,
+) {
   const [conectado, setConectado] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const onEventoRef = useRef(onEvento);
+  onEventoRef.current = onEvento;
 
-  useEffect(() => {
-    const ws = new WebSocket(`${WS_URL}/tablero/${sedeId}/`);
+  const conectar = useCallback(() => {
+    const sesion = getSesion();
+    const token = sesion ? `?token=${sesion.access}` : "";
+    const ws = new WebSocket(`${WS_URL}/tablero/${sedeId}/${token}`);
     wsRef.current = ws;
 
     ws.onopen = () => setConectado(true);
-    ws.onclose = () => setConectado(false);
-    ws.onmessage = (msg) => {
-      const data = JSON.parse(msg.data) as EventoAtencion;
-      setEventos((prev) => [...prev, data]);
+    ws.onclose = () => {
+      setConectado(false);
+      // Reconexión: el socket puede caerse por reinicios del backend.
+      setTimeout(() => {
+        if (wsRef.current === ws) conectar();
+      }, 3000);
     };
-
-    return () => ws.close();
+    ws.onmessage = (msg) => {
+      onEventoRef.current(JSON.parse(msg.data) as EventoAtencion);
+    };
   }, [sedeId]);
 
-  return { eventos, conectado };
+  useEffect(() => {
+    conectar();
+    return () => {
+      const ws = wsRef.current;
+      wsRef.current = null; // evita la reconexión tras desmontar
+      ws?.close();
+    };
+  }, [conectar]);
+
+  return { conectado };
 }

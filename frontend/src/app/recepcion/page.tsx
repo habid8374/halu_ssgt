@@ -1,24 +1,32 @@
 "use client";
 
-import { useAtencionesSocket } from "@/hooks/useAtencionesSocket";
+import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
+import Tablero from "@/components/Tablero";
+import { type Yo } from "@/lib/api";
 
 /**
- * Tablero de flujo (kanban por colores) para recepción.
- * Rol `recepcion`: ve todas las atenciones de su sede; NO ve historia clínica.
- * Las tarjetas se renderizarán como columnas por estado con Framer Motion (paso 5).
+ * Tablero de flujo para recepción: todas las atenciones de SU sede,
+ * con acciones de transición (registrar llegada, llamar, etc.).
  */
 export default function RecepcionPage() {
-  const { conectado } = useAtencionesSocket(1);
+  const [sede, setSede] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("halu_yo");
+    if (raw) {
+      const yo = JSON.parse(raw) as Yo;
+      setSede(yo.sede ?? 1);
+    }
+  }, []);
+
   return (
-    <main className="p-6">
-      <h1 className="text-xl font-bold">Recepción — Tablero de flujo</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        WebSocket: {conectado ? "conectado" : "desconectado"}
-      </p>
-      <p className="mt-4 text-sm">
-        Columnas del tablero (registrado → espera → llamado → atención →
-        paraclínicos → finalizado) se implementan en el paso 5.
-      </p>
-    </main>
+    <AppShell titulo="Recepción — Tablero de flujo">
+      {sede !== null ? (
+        <Tablero sedeId={sede} />
+      ) : (
+        <p className="text-sm text-slate-400">Cargando…</p>
+      )}
+    </AppShell>
   );
 }
