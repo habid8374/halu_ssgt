@@ -49,81 +49,92 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      {/* Video de fondo institucional */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 h-full w-full object-cover"
-      >
-        <source src="/login-bg.mp4" type="video/mp4" />
-      </video>
-      {/* Velo para legibilidad de la tarjeta */}
-      <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]" />
-
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-6 text-center">
+    // Escritorio: video | formulario (mitad y mitad). Móvil: video arriba,
+    // formulario debajo.
+    <main className="flex min-h-screen flex-col lg:flex-row">
+      {/* ------------------------------ Video ------------------------------ */}
+      <section className="relative h-64 w-full shrink-0 overflow-hidden sm:h-80 lg:h-auto lg:min-h-screen lg:w-1/2">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="/login-bg.mp4" type="video/mp4" />
+        </video>
+        {/* Degradado para que la marca se lea sobre el video */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/75 via-slate-900/15 to-transparent" />
+        <div className="absolute bottom-5 left-5 lg:bottom-12 lg:left-12">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="Halu Salud Ocupacional"
-            className="mx-auto mb-3 h-20 w-auto drop-shadow-lg"
+            className="h-14 w-auto drop-shadow-xl lg:h-24"
           />
-          <h1 className="text-2xl font-bold text-white drop-shadow">
+          <h2 className="mt-3 text-xl font-bold text-white drop-shadow lg:text-3xl">
             Halu Salud Ocupacional
-          </h1>
-          <p className="mt-1 text-sm text-white/80">
+          </h2>
+          <p className="text-sm text-white/85 lg:text-base">
             Prevención · Bienestar · Seguridad
           </p>
         </div>
+      </section>
 
-        <form
-          onSubmit={onSubmit}
-          className="rounded-2xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur"
-        >
-          <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
-            Correo
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
-            />
-          </label>
-          <label className="mt-4 block text-xs font-medium uppercase tracking-wide text-gray-500">
-            Contraseña
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
-            />
-          </label>
+      {/* --------------------------- Formulario ---------------------------- */}
+      <section className="flex flex-1 items-center justify-center bg-gray-50 px-6 py-10 lg:px-12">
+        <div className="w-full max-w-sm">
+          <h1 className="text-2xl font-bold text-gray-900">Bienvenido</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Ingresa con tu cuenta institucional
+          </p>
 
-          {error && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-          )}
+          <form onSubmit={onSubmit} className="mt-6">
+            <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
+              Correo
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
+              />
+            </label>
+            <label className="mt-4 block text-xs font-medium uppercase tracking-wide text-gray-500">
+              Contraseña
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
+              />
+            </label>
 
-          <button
-            type="submit"
-            disabled={cargando}
-            className="mt-5 w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50"
-          >
-            {cargando ? "Ingresando…" : "Ingresar"}
-          </button>
-        </form>
+            {error && (
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
 
-        <p className="mt-5 text-center text-xs text-white/70">
-          Powered by <span className="font-semibold tracking-wide text-white">AXENTIA</span>{" "}
-          <span className="font-light">technologies</span>
-        </p>
-      </div>
+            <button
+              type="submit"
+              disabled={cargando}
+              className="mt-6 w-full rounded-lg bg-teal-600 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50"
+            >
+              {cargando ? "Ingresando…" : "Ingresar"}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-xs text-gray-400">
+            Powered by{" "}
+            <span className="font-semibold tracking-wide text-gray-600">AXENTIA</span>{" "}
+            <span className="font-light">technologies</span>
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
