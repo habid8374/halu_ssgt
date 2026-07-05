@@ -128,8 +128,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-gray-400">
-            Powered by{" "}
+          <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+            Powered by
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/axentia.png" alt="Axentia" className="h-4 w-auto" />
             <span className="font-semibold tracking-wide text-gray-600">AXENTIA</span>{" "}
             <span className="font-light">technologies</span>
           </p>

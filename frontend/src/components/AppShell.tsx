@@ -135,8 +135,11 @@ export default function AppShell({
           >
             ⏻ Cerrar sesión
           </button>
-          <p className="mt-3 text-center text-[10px] text-gray-400">
-            Powered by <span className="font-semibold tracking-wide text-gray-500">AXENTIA</span>{" "}
+          <p className="mt-3 flex items-center justify-center gap-1 text-[10px] text-gray-400">
+            Powered by
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/axentia.png" alt="Axentia" className="h-3.5 w-auto" />
+            <span className="font-semibold tracking-wide text-gray-500">AXENTIA</span>{" "}
             <span className="font-light">technologies</span>
           </p>
         </div>
