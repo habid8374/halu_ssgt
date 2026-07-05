@@ -19,3 +19,5 @@ class TenantTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class TenantTokenObtainPairView(TokenObtainPairView):
     serializer_class = TenantTokenObtainPairSerializer
+    # OWASP A07: rate-limit dedicado del login (DEFAULT_THROTTLE_RATES["token"]).
+    throttle_scope = "token"

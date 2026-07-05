@@ -134,6 +134,26 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    # OWASP A07: límite de tasa. "token" protege el login contra fuerza bruta.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("THROTTLE_ANON", default="60/min"),
+        "user": env("THROTTLE_USER", default="600/min"),
+        "token": env("THROTTLE_TOKEN", default="10/min"),
+    },
+}
+
+# --- JWT: tokens cortos con rotación y blacklist de refresh usados (A07) ----
+from datetime import timedelta  # noqa: E402
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MIN", default=30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=env.int("JWT_REFRESH_HORAS", default=12)),
+    "ROTATE_REFRESH_TOKENS": True,
 }
 
 # --- Channels (tablero en tiempo real) -------------------------------------
