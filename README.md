@@ -82,4 +82,23 @@ tablero, admin de plataforma y sidebar por rol.
   anonimato. UI en /psicosocial (rol psicologo_sst: psicologo@demo.com).
 - **Profesiograma**: matriz de exámenes por cargo/empresa (admin del tenant).
 
-**Sin** RIPS ni facturación hasta fase 3 (CLAUDE.md §6).
+## Fase 3 — Facturación ✅ (dos motores separados, regla 8)
+
+- **Motor estándar** (/gerencia/facturacion): tarifario por convenio,
+  generación de factura por período con atenciones finalizadas sin
+  facturar, emitir/marcar pagada. La empresa cliente ve SUS facturas
+  emitidas en su portal. NUNCA genera RIPS (fuera del SGSSS).
+- **Motor ARL/RIPS**: exclusivo de accidentes/enfermedad laboral. Genera el
+  RIPS JSON (Res. 948/2026, campos duales CIE-10/CIE-11) y obtiene CUV vía
+  adaptador MUV (stub en desarrollo; el cliente real de MUV/Factus/SIIFA se
+  conecta con credenciales del prestador, patrón Halu Medic). El software es
+  general: la IPS que no atiende accidentes simplemente no usa este módulo.
+
+## Fase 4 — Interoperabilidad ✅ (base)
+
+- **RDA / FHIR** (Res. 866/2021, Ley 2015/2020): endpoint
+  `GET /api/atenciones/{id}/rda/` genera el Resumen Digital de Atención como
+  Bundle FHIR R4 con los 4 grupos de datos obligatorios (Patient, Encounter,
+  Procedure, Observation), sin exponer la historia clínica reservada.
+  Exportación auditada; botón de descarga en la vista del médico. La conexión
+  al mecanismo nacional se activará cuando esté operativo para IPS.

@@ -40,6 +40,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },
     { href: "/gerencia/alertas", label: "Alertas de plazos", icono: "⏰" },
     { href: "/gerencia/accidentes", label: "Accidentes (FURAT/FUREL)", icono: "🚨" },
+    { href: "/gerencia/facturacion", label: "Facturación", icono: "🧾" },
     { href: "#reportes", label: "Reportes", icono: "📊", deshabilitado: true },
   ],
   psicologo_sst: [
@@ -47,6 +48,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   ],
   empresa_cliente: [
     { href: "/portal-empresa", label: "Conceptos de aptitud", icono: "📄" },
+    { href: "/portal-empresa/facturas", label: "Mis facturas", icono: "🧾" },
   ],
 };
 

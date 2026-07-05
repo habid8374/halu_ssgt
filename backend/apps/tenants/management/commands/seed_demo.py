@@ -142,10 +142,20 @@ class Command(BaseCommand):
             },
         )
 
+        from apps.facturacion.models import TarifaConvenio
+
         objetos_empresa = []
         for nombre, nit in empresas:
             e, _ = Empresa.objects.get_or_create(nit=nit, defaults={"nombre": nombre})
             objetos_empresa.append(e)
+            # Tarifario demo del convenio.
+            for tipo, valor in [
+                ("pre_ingreso", 95000), ("periodico", 85000), ("egreso", 80000),
+                ("post_incapacidad", 90000), ("retorno_laboral", 90000), ("seguimiento", 70000),
+            ]:
+                TarifaConvenio.objects.get_or_create(
+                    empresa=e, tipo_examen=tipo, defaults={"valor": valor}
+                )
         usuario(
             f"empresa@{dominio_correo}", f"Portal {objetos_empresa[0].nombre}",
             Rol.EMPRESA_CLIENTE, empresa=objetos_empresa[0],

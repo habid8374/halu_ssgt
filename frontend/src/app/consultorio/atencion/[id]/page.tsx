@@ -165,6 +165,22 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
         <Link href="/consultorio/mi-cola" className="text-sm text-teal-600 hover:underline">
           ← Volver a mi cola
         </Link>
+        <button
+          onClick={async () => {
+            const rda = await apiFetch(`/atenciones/${atencionId}/rda/`);
+            const blob = new Blob([JSON.stringify(rda, null, 2)], { type: "application/fhir+json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `rda_atencion_${atencionId}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="ml-4 rounded-lg bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+          title="Resumen Digital de Atención — FHIR (Res. 866/2021)"
+        >
+          ⬇ RDA (FHIR)
+        </button>
       </div>
 
       {atencion && (

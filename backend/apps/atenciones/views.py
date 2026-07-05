@@ -153,6 +153,22 @@ class AtencionViewSet(viewsets.ModelViewSet):
         return Response(AtencionSerializer(atencion).data)
 
     @action(detail=True, methods=["get"])
+    def rda(self, request, pk=None):
+        """
+        Resumen Digital de Atención (FHIR Bundle, Res. 866/2021 — fase 4).
+        Médico asignado o coordinador; la generación queda auditada.
+        """
+        from apps.historia_clinica.rda import construir_rda
+        from apps.usuarios.audit import ip_de, registrar
+        from apps.usuarios.models import AccionAudit
+
+        if request.user.rol not in {Rol.MEDICO, Rol.COORDINADOR}:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        atencion = self.get_object()
+        registrar(request.user, AccionAudit.EXPORTAR, atencion, descripcion="RDA", ip=ip_de(request))
+        return Response(construir_rda(atencion))
+
+    @action(detail=True, methods=["get"])
     def historial(self, request, pk=None):
         atencion = self.get_object()
         data = HistorialEstadoSerializer(

@@ -43,6 +43,7 @@ SHARED_APPS = [
     "apps.atenciones",         # dependencia de FK de usuarios (sede/empresa)
     "apps.historia_clinica",
     "apps.accidentes",
+    "apps.facturacion",
 ]
 
 TENANT_APPS = [
@@ -55,7 +56,8 @@ TENANT_APPS = [
     "apps.usuarios",
     "apps.atenciones",
     "apps.historia_clinica",
-    "apps.accidentes",         # scaffold; modelos en fase 2
+    "apps.accidentes",
+    "apps.facturacion",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [
