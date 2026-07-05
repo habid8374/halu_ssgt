@@ -135,6 +135,21 @@ export default function AppShell({
   const pathname = usePathname();
   const [yo, setYo] = useState<Yo | null>(null);
   const [abierto, setAbierto] = useState(false); // drawer móvil
+  const [colapsado, setColapsado] = useState(false); // sidebar escritorio
+
+  useEffect(() => {
+    setColapsado(localStorage.getItem("halu_sidebar") === "colapsado");
+  }, []);
+
+  function alternarMenu() {
+    if (window.innerWidth >= 1024) {
+      const nuevo = !colapsado;
+      setColapsado(nuevo);
+      localStorage.setItem("halu_sidebar", nuevo ? "colapsado" : "visible");
+    } else {
+      setAbierto(true);
+    }
+  }
 
   useEffect(() => {
     if (!getSesion()) {
@@ -153,7 +168,11 @@ export default function AppShell({
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* ---------------------- Sidebar fijo (escritorio) --------------------- */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-gray-200 bg-white lg:flex">
+      <aside
+        className={`fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:flex ${
+          colapsado ? "-translate-x-full" : "translate-x-0"
+        }`}
+      >
         <SidebarContenido yo={yo} pathname={pathname} />
       </aside>
 
@@ -192,13 +211,18 @@ export default function AppShell({
       </AnimatePresence>
 
       {/* ------------------------------ Contenido ----------------------------- */}
-      <div className="min-w-0 flex-1 lg:ml-60">
+      <div
+        className={`min-w-0 flex-1 transition-[margin] duration-300 ease-in-out ${
+          colapsado ? "lg:ml-0" : "lg:ml-60"
+        }`}
+      >
         <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white/95 px-4 py-3.5 backdrop-blur lg:px-6 lg:py-4">
           {/* Hamburguesa (solo móvil) */}
           <button
-            onClick={() => setAbierto(true)}
-            aria-label="Abrir menú"
-            className="flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-[5px] rounded-lg border border-gray-200 transition hover:bg-gray-50 lg:hidden"
+            onClick={alternarMenu}
+            aria-label="Mostrar u ocultar menú"
+            title="Mostrar u ocultar menú"
+            className="flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-[5px] rounded-lg border border-gray-200 transition hover:bg-gray-50"
           >
             <span className="h-0.5 w-[18px] rounded bg-gray-700" />
             <span className="h-0.5 w-[18px] rounded bg-gray-700" />
