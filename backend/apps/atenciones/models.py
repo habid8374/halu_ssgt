@@ -230,6 +230,50 @@ class Atencion(models.Model):
         )
 
 
+class EstadoCita(models.TextChoices):
+    PROGRAMADA = "programada", "Programada"
+    CONFIRMADA = "confirmada", "Confirmada"
+    CUMPLIDA = "cumplida", "Cumplida (admitida)"
+    NO_ASISTIO = "no_asistio", "No asistió"
+    CANCELADA = "cancelada", "Cancelada"
+
+
+class Cita(models.Model):
+    """
+    Agenda de exámenes ocupacionales. Al llegar el trabajador, recepción la
+    "admite": se crea la Atención (estado registrado) y la cita pasa a
+    cumplida. La periodicidad de exámenes (recordatorios de vencimiento) se
+    automatiza con Celery beat en una iteración posterior de la agenda.
+    """
+
+    trabajador = models.ForeignKey(Trabajador, on_delete=models.PROTECT, related_name="citas")
+    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="citas")
+    sede = models.ForeignKey(Sede, on_delete=models.PROTECT, related_name="citas")
+    profesional_asignado = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="citas_asignadas", limit_choices_to={"rol": "medico"},
+    )
+    tipo_examen = models.CharField(max_length=20, choices=TipoExamen.choices)
+    fecha_hora = models.DateTimeField(db_index=True)
+    estado = models.CharField(max_length=12, choices=EstadoCita.choices, default=EstadoCita.PROGRAMADA)
+    nota = models.CharField(max_length=255, blank=True)
+    atencion = models.OneToOneField(
+        Atencion, on_delete=models.SET_NULL, null=True, blank=True, related_name="cita"
+    )
+    creado_por = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT, related_name="citas_creadas"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Cita"
+        verbose_name_plural = "Citas"
+        ordering = ["fecha_hora"]
+
+    def __str__(self):
+        return f"Cita {self.trabajador} — {self.fecha_hora:%Y-%m-%d %H:%M} [{self.estado}]"
+
+
 class HistorialEstado(models.Model):
     """
     Registro append-only de cada cambio de estado de una Atención

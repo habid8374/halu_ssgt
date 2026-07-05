@@ -75,6 +75,51 @@ class TransicionesTest(BaseAtencionTest):
         self.assertEqual(h.usuario, self.recepcion)
 
 
+class CitaTest(BaseAtencionTest):
+    def _crear_cita(self):
+        from django.utils import timezone as tz
+
+        from .models import Cita
+
+        return Cita.objects.create(
+            trabajador=self.trabajador, empresa=self.empresa, sede=self.sede,
+            tipo_examen="periodico", fecha_hora=tz.now(), creado_por=self.recepcion,
+            profesional_asignado=self.medico,
+        )
+
+    def test_admitir_crea_atencion_y_cumple_cita(self):
+        from django_tenants.test.client import TenantClient
+
+        cita = self._crear_cita()
+        client = TenantClient(self.tenant)
+        client.force_login(self.recepcion)
+        r = client.post(f"/api/citas/{cita.pk}/admitir/")
+        self.assertEqual(r.status_code, 201)
+        cita.refresh_from_db()
+        self.assertEqual(cita.estado, "cumplida")
+        self.assertEqual(cita.atencion.estado, EstadoAtencion.REGISTRADO)
+        self.assertEqual(cita.atencion.profesional_asignado, self.medico)
+        # Re-admitir es rechazado.
+        r = client.post(f"/api/citas/{cita.pk}/admitir/")
+        self.assertEqual(r.status_code, 409)
+
+    def test_empresa_cliente_no_accede_a_agenda(self):
+        from django_tenants.test.client import TenantClient
+
+        from apps.usuarios.models import Usuario
+        from apps.usuarios.roles import Rol
+
+        empresa_user = Usuario.objects.create_user(
+            email="e@t.co", password="x", nombre_completo="E",
+            rol=Rol.EMPRESA_CLIENTE, empresa=self.empresa,
+        )
+        self._crear_cita()
+        client = TenantClient(self.tenant)
+        client.force_login(empresa_user)
+        r = client.get("/api/citas/")
+        self.assertEqual(r.status_code, 403)
+
+
 class HistorialAppendOnlyTest(BaseAtencionTest):
     def test_no_update(self):
         self.atencion.cambiar_estado("espera", self.recepcion)

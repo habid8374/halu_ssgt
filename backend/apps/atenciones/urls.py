@@ -9,6 +9,7 @@ router.register("empresas", views.EmpresaViewSet, basename="empresa")
 router.register("medicos", views.MedicoViewSet, basename="medico")
 router.register("trabajadores", views.TrabajadorViewSet, basename="trabajador")
 router.register("atenciones", views.AtencionViewSet, basename="atencion")
+router.register("citas", views.CitaViewSet, basename="cita")
 router.register("me", views.MeView, basename="me")
 
 urlpatterns = router.urls

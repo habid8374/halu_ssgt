@@ -1,6 +1,14 @@
 from rest_framework import serializers
 
-from .models import Atencion, Consultorio, Empresa, HistorialEstado, Sede, Trabajador
+from .models import (
+    Atencion,
+    Cita,
+    Consultorio,
+    Empresa,
+    HistorialEstado,
+    Sede,
+    Trabajador,
+)
 
 
 class SedeSerializer(serializers.ModelSerializer):
@@ -78,6 +86,35 @@ class TransicionSerializer(serializers.Serializer):
 
     estado = serializers.ChoiceField(choices=[c[0] for c in Atencion._meta.get_field("estado").choices])
     nota = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class CitaSerializer(serializers.ModelSerializer):
+    trabajador_nombre = serializers.SerializerMethodField()
+    empresa_nombre = serializers.CharField(source="empresa.nombre", read_only=True)
+    profesional_nombre = serializers.CharField(
+        source="profesional_asignado.nombre_completo", read_only=True, default=None
+    )
+
+    class Meta:
+        model = Cita
+        fields = [
+            "id", "trabajador", "trabajador_nombre", "empresa", "empresa_nombre",
+            "sede", "profesional_asignado", "profesional_nombre", "tipo_examen",
+            "fecha_hora", "estado", "nota", "atencion", "created_at",
+        ]
+        read_only_fields = ["empresa", "estado", "atencion"]
+
+    def get_trabajador_nombre(self, obj):
+        return f"{obj.trabajador.nombres} {obj.trabajador.apellidos}"
+
+    def validate(self, data):
+        if "trabajador" in data:
+            data["empresa"] = data["trabajador"].empresa
+        return data
+
+    def create(self, validated_data):
+        validated_data["creado_por"] = self.context["request"].user
+        return super().create(validated_data)
 
 
 class HistorialEstadoSerializer(serializers.ModelSerializer):

@@ -59,8 +59,14 @@ cd frontend && npm install && npm run dev
 El tenant se resuelve por dominio: cada IPS ve exclusivamente sus datos y los
 JWT quedan amarrados a su esquema (claim `schema`). Ver CLAUDE.md §8.
 
-## Alcance de fase 1
+## Estado — Fase 1 COMPLETA ✅
 
-Núcleo operativo: modelos base, roles/permisos, admisión, historia clínica,
-concepto médico, tablero en tiempo real. **Sin** RIPS, facturación ni batería
-psicosocial (fases 2–3).
+Núcleo operativo terminado: modelos + migraciones multi-tenant, roles y
+permisos legales por objeto (con tests), JWT amarrado por IPS, tablero en
+tiempo real (Channels), admisión, historia clínica cifrada + concepto con
+firma (licencia SST), portal empresa, agenda de citas con admisión al
+tablero, admin de plataforma y sidebar por rol.
+
+Siguiente: **Fase 2** — batería psicosocial, accidentes (FURAT/FUREL) con
+alertas de plazo (Celery beat), profesiograma, auditoría ampliada.
+**Sin** RIPS ni facturación hasta fase 3 (CLAUDE.md §6).

@@ -30,7 +30,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   recepcion: [
     { href: "/recepcion", label: "Tablero de flujo", icono: "🗂️" },
     { href: "/recepcion/admision", label: "Admisión", icono: "📝" },
-    { href: "#agenda", label: "Agenda", icono: "📅", deshabilitado: true },
+    { href: "/recepcion/agenda", label: "Agenda", icono: "📅" },
   ],
   medico: [
     { href: "/consultorio/mi-cola", label: "Mi cola de atención", icono: "🩺" },

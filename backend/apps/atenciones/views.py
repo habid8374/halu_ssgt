@@ -12,6 +12,7 @@ from apps.usuarios.roles import Rol
 
 from .models import (
     Atencion,
+    Cita,
     Consultorio,
     Empresa,
     Sede,
@@ -20,6 +21,7 @@ from .models import (
 )
 from .serializers import (
     AtencionSerializer,
+    CitaSerializer,
     ConsultorioSerializer,
     CrearAtencionSerializer,
     EmpresaSerializer,
@@ -157,6 +159,64 @@ class AtencionViewSet(viewsets.ModelViewSet):
             atencion.historial_estados.select_related("usuario"), many=True
         ).data
         return Response(data)
+
+
+class CitaViewSet(viewsets.ModelViewSet):
+    """
+    Agenda. Recepción gestiona las citas de su sede; el médico ve las suyas;
+    el coordinador ve todas (solo lectura vía permisos de tablero).
+    """
+
+    queryset = Cita.objects.select_related(
+        "trabajador", "empresa", "profesional_asignado"
+    )
+    serializer_class = CitaSerializer
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_permissions(self):
+        if self.action in {"create", "partial_update", "admitir", "cancelar"}:
+            return [EsRecepcion()]
+        return [PuedeVerTablero()]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.rol == Rol.RECEPCION:
+            qs = qs.filter(sede=user.sede)
+        elif user.rol == Rol.MEDICO:
+            qs = qs.filter(profesional_asignado=user)
+        elif user.rol != Rol.COORDINADOR:
+            return qs.none()
+        if self.request.query_params.get("pendientes") == "1":
+            qs = qs.filter(estado__in=["programada", "confirmada"])
+        return qs
+
+    @action(detail=True, methods=["post"])
+    def admitir(self, request, pk=None):
+        """Llegó el trabajador: crea la Atención y marca la cita cumplida."""
+        cita = self.get_object()
+        if cita.estado in {"cumplida", "cancelada"}:
+            return Response(
+                {"detail": f"La cita ya está {cita.estado}."}, status=status.HTTP_409_CONFLICT
+            )
+        atencion = Atencion.objects.create(
+            trabajador=cita.trabajador, empresa=cita.empresa, sede=cita.sede,
+            tipo_examen=cita.tipo_examen, profesional_asignado=cita.profesional_asignado,
+            creado_por=request.user,
+        )
+        cita.estado = "cumplida"
+        cita.atencion = atencion
+        cita.save(update_fields=["estado", "atencion"])
+        return Response(AtencionSerializer(atencion).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def cancelar(self, request, pk=None):
+        cita = self.get_object()
+        if cita.estado == "cumplida":
+            return Response({"detail": "La cita ya fue admitida."}, status=status.HTTP_409_CONFLICT)
+        cita.estado = "cancelada"
+        cita.save(update_fields=["estado"])
+        return Response(CitaSerializer(cita).data)
 
 
 class MeView(viewsets.ViewSet):
