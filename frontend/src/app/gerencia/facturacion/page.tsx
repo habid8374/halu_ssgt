@@ -52,14 +52,7 @@ export default function FacturacionPage() {
   }, []);
 
   useEffect(() => {
-    // Empresas: el coordinador no tiene el endpoint de recepción; se listan
-    // desde las facturas/tarifas ya existentes o el admin. Para simplificar,
-    // se piden vía tarifas.
-    void apiFetch<{ empresa: number; empresa_nombre: string }[]>("/tarifas/").then((ts) => {
-      const unicas = new Map<number, string>();
-      ts.forEach((t) => unicas.set(t.empresa, t.empresa_nombre));
-      setEmpresas([...unicas].map(([id, nombre]) => ({ id, nombre })));
-    });
+    void apiFetch<Empresa[]>("/empresas/").then(setEmpresas);
     void cargar();
   }, [cargar]);
 

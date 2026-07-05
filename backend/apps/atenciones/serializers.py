@@ -26,7 +26,7 @@ class ConsultorioSerializer(serializers.ModelSerializer):
 class EmpresaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
-        fields = ["id", "nombre", "nit", "telefono", "email", "activo"]
+        fields = ["id", "nombre", "nit", "direccion", "telefono", "email", "activo"]
 
 
 class TrabajadorSerializer(serializers.ModelSerializer):

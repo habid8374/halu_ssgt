@@ -38,6 +38,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   ],
   coordinador: [
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },
+    { href: "/gerencia/empresas", label: "Empresas (convenios)", icono: "🏢" },
     { href: "/gerencia/alertas", label: "Alertas de plazos", icono: "⏰" },
     { href: "/gerencia/accidentes", label: "Accidentes (FURAT/FUREL)", icono: "🚨" },
     { href: "/gerencia/facturacion", label: "Facturación", icono: "🧾" },

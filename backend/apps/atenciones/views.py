@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -50,12 +51,35 @@ class ConsultorioViewSet(viewsets.ReadOnlyModelViewSet):
         return qs.filter(sede_id=sede_id) if sede_id else qs
 
 
-class EmpresaViewSet(viewsets.ReadOnlyModelViewSet):
-    """Empresas con convenio (para el formulario de admisión)."""
+class PermisoEmpresas(BasePermission):
+    """Coordinador gestiona los convenios; recepción solo los consulta."""
 
-    queryset = Empresa.objects.filter(activo=True).order_by("nombre")
+    def has_permission(self, request, view):
+        u = request.user
+        if not (u and u.is_authenticated):
+            return False
+        if u.rol == Rol.COORDINADOR:
+            return True
+        return u.rol == Rol.RECEPCION and request.method in SAFE_METHODS
+
+
+class EmpresaViewSet(viewsets.ModelViewSet):
+    """
+    Empresas con convenio. Cada IPS crea y administra las suyas desde la app
+    (regla de UX: nada exige el admin para operar). Sin DELETE: se desactivan.
+    """
+
+    queryset = Empresa.objects.order_by("nombre")
     serializer_class = EmpresaSerializer
-    permission_classes = [EsRecepcion]
+    permission_classes = [PermisoEmpresas]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Recepción solo ve activas (para admisión); coordinador ve todas.
+        if self.request.user.rol == Rol.RECEPCION:
+            qs = qs.filter(activo=True)
+        return qs
 
 
 class MedicoViewSet(viewsets.ViewSet):
