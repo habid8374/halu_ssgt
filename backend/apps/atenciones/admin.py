@@ -5,7 +5,17 @@ deja historial. El HistorialEstado es de solo lectura (append-only).
 """
 from django.contrib import admin
 
-from .models import Atencion, Consultorio, Empresa, HistorialEstado, Sede, Trabajador
+from .models import (
+    Atencion,
+    Cita,
+    Consultorio,
+    Empresa,
+    HistorialEstado,
+    Profesiograma,
+    Sede,
+    TipoExamenRequerido,
+    Trabajador,
+)
 
 
 @admin.register(Sede)
@@ -58,3 +68,21 @@ class HistorialEstadoAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+class ExamenRequeridoInline(admin.TabularInline):
+    model = TipoExamenRequerido
+    extra = 1
+
+
+@admin.register(Profesiograma)
+class ProfesiogramaAdmin(admin.ModelAdmin):
+    list_display = ("empresa", "cargo", "activo")
+    list_filter = ("empresa",)
+    inlines = [ExamenRequeridoInline]
+
+
+@admin.register(Cita)
+class CitaAdmin(admin.ModelAdmin):
+    list_display = ("trabajador", "fecha_hora", "tipo_examen", "estado", "profesional_asignado")
+    list_filter = ("estado",)

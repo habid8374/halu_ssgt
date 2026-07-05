@@ -230,6 +230,40 @@ class Atencion(models.Model):
         )
 
 
+class Profesiograma(models.Model):
+    """Matriz de exámenes requeridos por cargo y empresa (Decreto 1072/2015)."""
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="profesiogramas")
+    cargo = models.CharField(max_length=150)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Profesiograma"
+        verbose_name_plural = "Profesiogramas"
+        constraints = [
+            models.UniqueConstraint(fields=["empresa", "cargo"], name="uniq_profesiograma_empresa_cargo")
+        ]
+
+    def __str__(self):
+        return f"{self.empresa.nombre} — {self.cargo}"
+
+
+class TipoExamenRequerido(models.Model):
+    profesiograma = models.ForeignKey(Profesiograma, on_delete=models.CASCADE, related_name="examenes")
+    tipo_examen = models.CharField(max_length=20, choices=TipoExamen.choices)
+    periodicidad_meses = models.PositiveSmallIntegerField(
+        default=12, help_text="Cada cuántos meses se repite (0 = solo una vez)."
+    )
+    observaciones = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Tipo de examen requerido"
+        verbose_name_plural = "Tipos de examen requeridos"
+
+    def __str__(self):
+        return f"{self.profesiograma} · {self.tipo_examen} c/{self.periodicidad_meses}m"
+
+
 class EstadoCita(models.TextChoices):
     PROGRAMADA = "programada", "Programada"
     CONFIRMADA = "confirmada", "Confirmada"

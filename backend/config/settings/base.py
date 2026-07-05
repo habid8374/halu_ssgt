@@ -147,6 +147,14 @@ CHANNEL_LAYERS = {
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=REDIS_URL)
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=REDIS_URL)
 CELERY_TIMEZONE = "America/Bogota"
+# Alertas de plazos normativos (FURAT/FUREL 2 días hábiles; adaptación 20
+# días hábiles) — reglas 6 y 7 de CLAUDE.md.
+CELERY_BEAT_SCHEDULE = {
+    "revisar-plazos-cumplimiento": {
+        "task": "apps.accidentes.tasks.revisar_plazos",
+        "schedule": 60 * 60,  # cada hora
+    },
+}
 
 # --- Almacenamiento de objetos (DocumentoAdjunto) --------------------------
 # Abstraído: FileSystemStorage en dev; S3-compatible (MinIO/S3) por env.

@@ -38,7 +38,12 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   ],
   coordinador: [
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },
+    { href: "/gerencia/alertas", label: "Alertas de plazos", icono: "⏰" },
+    { href: "/gerencia/accidentes", label: "Accidentes (FURAT/FUREL)", icono: "🚨" },
     { href: "#reportes", label: "Reportes", icono: "📊", deshabilitado: true },
+  ],
+  psicologo_sst: [
+    { href: "/psicosocial", label: "Batería psicosocial", icono: "🧠" },
   ],
   empresa_cliente: [
     { href: "/portal-empresa", label: "Conceptos de aptitud", icono: "📄" },

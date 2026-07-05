@@ -42,7 +42,7 @@ class ConceptoSerializer(serializers.ModelSerializer):
             "id", "atencion", "historia", "profesional", "profesional_nombre",
             "trabajador_nombre", "licencia_sst", "aptitud", "restricciones",
             "recomendaciones_laborales", "firmado", "fecha_emision",
-            "vigencia_hasta", "fecha_recomendacion", "created_at",
+            "vigencia_hasta", "fecha_recomendacion", "seguimiento_completado", "created_at",
         ]
         read_only_fields = ["profesional", "licencia_sst", "firmado", "fecha_emision"]
 

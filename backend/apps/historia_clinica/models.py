@@ -101,6 +101,9 @@ class ConceptoMedicoOcupacional(models.Model):
     vigencia_hasta = models.DateField(null=True, blank=True)
     # Fecha de la recomendación: base del plazo de 20 días hábiles (regla 7).
     fecha_recomendacion = models.DateField(null=True, blank=True)
+    # Seguimiento de la adaptación de condiciones: al marcarse, la alerta
+    # de 20 días hábiles se cierra (apps.accidentes.tasks).
+    seguimiento_completado = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -147,6 +150,59 @@ class ConsentimientoInformado(models.Model):
 
     def __str__(self):
         return f"Consentimiento {self.tipo} v{self.version_documento} — atención #{self.atencion_id}"
+
+
+class TipoInstrumento(models.TextChoices):
+    INTRALABORAL = "intralaboral", "Cuestionario intralaboral"
+    EXTRALABORAL = "extralaboral", "Cuestionario extralaboral"
+    ESTRES = "estres", "Cuestionario de estrés"
+    FICHA = "ficha", "Ficha de datos sociodemográficos"
+
+
+class NivelRiesgo(models.TextChoices):
+    SIN_RIESGO = "sin_riesgo", "Sin riesgo / despreciable"
+    BAJO = "bajo", "Bajo"
+    MEDIO = "medio", "Medio"
+    ALTO = "alto", "Alto"
+    MUY_ALTO = "muy_alto", "Muy alto"
+
+
+class InstrumentoPsicosocial(models.Model):
+    """
+    Instrumento de la batería de riesgo psicosocial (Res. 2404/2019).
+
+    CUSTODIA SEPARADA (regla 4): el instrumento individual SOLO lo ve el
+    psicólogo que lo aplicó. Empleador y coordinador acceden únicamente a
+    informes consolidados agregados (endpoint /psicosocial/consolidado/).
+    El contenido de respuestas va cifrado (regla 10).
+    """
+
+    trabajador = models.ForeignKey(
+        "atenciones.Trabajador", on_delete=models.PROTECT, related_name="instrumentos_psicosociales"
+    )
+    atencion = models.ForeignKey(
+        "atenciones.Atencion", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="instrumentos_psicosociales",
+    )
+    tipo = models.CharField(max_length=15, choices=TipoInstrumento.choices)
+    aplicado_por = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT,
+        related_name="instrumentos_aplicados", limit_choices_to={"rol": "psicologo_sst"},
+    )
+    fecha_aplicacion = models.DateField(default=timezone.localdate)
+    nivel_riesgo = models.CharField(max_length=10, choices=NivelRiesgo.choices)
+    # Respuestas/observaciones individuales: cifradas, nunca agregables por API.
+    contenido = EncryptedTextField(blank=True)
+    archivado = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Instrumento psicosocial"
+        verbose_name_plural = "Instrumentos psicosociales"
+
+    def __str__(self):
+        # Sin datos del contenido en __str__ (custodia).
+        return f"{self.get_tipo_display()} — trabajador #{self.trabajador_id} ({self.fecha_aplicacion})"
 
 
 class TipoDocumentoAdjunto(models.TextChoices):

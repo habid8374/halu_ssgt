@@ -175,3 +175,61 @@ class FirmaConceptoTest(BasePermisosTest):
         concepto.refresh_from_db()
         self.assertTrue(concepto.firmado)
         self.assertEqual(concepto.licencia_sst, lic)
+
+
+class PsicosocialCustodiaTest(BasePermisosTest):
+    """Regla 4 (Res. 2404/2019): custodia separada de instrumentos."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.usuarios.models import Usuario
+
+        self.psicologo = Usuario.objects.create_user(
+            email="p@t.co", password="x", nombre_completo="P",
+            rol=Rol.PSICOLOGO_SST, sede=self.sede,
+        )
+        self.otro_psicologo = Usuario.objects.create_user(
+            email="p2@t.co", password="x", nombre_completo="P2",
+            rol=Rol.PSICOLOGO_SST, sede=self.sede,
+        )
+        from .models import InstrumentoPsicosocial
+
+        self.instrumento = InstrumentoPsicosocial.objects.create(
+            trabajador=self.trabajador, tipo="intralaboral",
+            aplicado_por=self.psicologo, nivel_riesgo="alto",
+            contenido="respuestas individuales reservadas",
+        )
+
+    def test_solo_el_psicologo_que_aplico_ve_el_instrumento(self):
+        url = f"/api/psicosocial/instrumentos/{self.instrumento.pk}/"
+        r = self._get(self.psicologo, url)
+        self.assertEqual(r.status_code, 200)
+        # Otro psicólogo: fuera de su custodia -> 404 por scoping.
+        self.assertEqual(self._get(self.otro_psicologo, url).status_code, 404)
+        # Empresa, coordinador y médico: prohibido.
+        self.assertEqual(self._get(self.empresa_user, url).status_code, 403)
+        self.assertEqual(self._get(self.coordinador, url).status_code, 403)
+        self.assertEqual(self._get(self.medico, url).status_code, 403)
+
+    def test_consolidado_agregado_sin_individuales(self):
+        from .models import InstrumentoPsicosocial
+
+        for i in range(3):
+            t = Trabajador.objects.create(
+                empresa=self.empresa, numero_documento=f"c{i}", nombres="X", apellidos="Y"
+            )
+            InstrumentoPsicosocial.objects.create(
+                trabajador=t, tipo="estres", aplicado_por=self.psicologo, nivel_riesgo="medio"
+            )
+        r = self._get(self.empresa_user, "/api/psicosocial/consolidado/")
+        self.assertEqual(r.status_code, 200)
+        cuerpo = r.json()
+        self.assertEqual(cuerpo["total"], 4)
+        # Solo agregados: nunca contenido ni identificación individual.
+        self.assertNotIn("contenido", str(cuerpo))
+        self.assertTrue(all(set(d) == {"tipo", "nivel_riesgo", "cantidad"} for d in cuerpo["detalle"]))
+
+    def test_consolidado_respeta_minimo_anonimato(self):
+        r = self._get(self.empresa_user, "/api/psicosocial/consolidado/")
+        # Solo hay 1 instrumento de su empresa: no se entrega detalle.
+        self.assertEqual(r.json()["detalle"], [])

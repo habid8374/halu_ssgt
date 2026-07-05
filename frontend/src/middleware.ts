@@ -19,7 +19,7 @@ const HOME_POR_ROL: Record<string, string> = {
   medico: "/consultorio/mi-cola",
   coordinador: "/gerencia",
   empresa_cliente: "/portal-empresa",
-  psicologo_sst: "/login", // sin vistas en fase 1 (batería psicosocial: fase 2)
+  psicologo_sst: "/psicosocial",
   admin_sistema: "/login",
 };
 
@@ -29,6 +29,7 @@ const ROLES_POR_RUTA: Array<[string, string[]]> = [
   ["/consultorio", ["medico"]],
   ["/gerencia", ["coordinador"]],
   ["/portal-empresa", ["empresa_cliente"]],
+  ["/psicosocial", ["psicologo_sst"]],
 ];
 
 export function middleware(request: NextRequest) {
@@ -74,5 +75,6 @@ export const config = {
     "/consultorio/:path*",
     "/gerencia/:path*",
     "/portal-empresa/:path*",
+    "/psicosocial/:path*",
   ],
 };

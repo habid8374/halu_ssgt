@@ -128,6 +128,19 @@ class Command(BaseCommand):
         recepcion = usuario(f"recepcion@{dominio_correo}", "Rosa Recepción", Rol.RECEPCION, sede=sede)
         medico = usuario(f"medico@{dominio_correo}", "Dr. Mario Médico", Rol.MEDICO, sede=sede)
         usuario(f"coordinador@{dominio_correo}", "Carla Coordinadora", Rol.COORDINADOR)
+        psicologo = usuario(f"psicologo@{dominio_correo}", "Psi. Paula Psicóloga", Rol.PSICOLOGO_SST, sede=sede)
+        prof_psi, _ = Profesional.objects.get_or_create(
+            usuario=psicologo, defaults={"tipo": "psicologo", "registro_profesional": "PSI-9876"}
+        )
+        LicenciaSST.objects.get_or_create(
+            profesional=prof_psi, numero="SST-2024-002",
+            defaults={
+                "entidad_expide": "Secretaría de Salud",
+                "fecha_expedicion": dt.date(2024, 1, 15),
+                "fecha_vencimiento": dt.date.today() + dt.timedelta(days=365 * 5),
+                "validada": True,
+            },
+        )
 
         objetos_empresa = []
         for nombre, nit in empresas:

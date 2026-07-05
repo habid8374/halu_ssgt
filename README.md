@@ -67,6 +67,19 @@ tiempo real (Channels), admisión, historia clínica cifrada + concepto con
 firma (licencia SST), portal empresa, agenda de citas con admisión al
 tablero, admin de plataforma y sidebar por rol.
 
-Siguiente: **Fase 2** — batería psicosocial, accidentes (FURAT/FUREL) con
-alertas de plazo (Celery beat), profesiograma, auditoría ampliada.
+## Fase 2 — Cumplimiento ampliado ✅
+
+- **Accidentes/enfermedad laboral**: registro FURAT/FUREL con plazo de 2 días
+  hábiles calculado automáticamente, marcado de envío a ARL con radicado e
+  investigación (Res. 1401/2007). UI en /gerencia/accidentes.
+- **Alertas de plazo** (Celery beat, cada hora): FURAT/FUREL por vencer o
+  vencidos y adaptación de condiciones (20 días hábiles, Res. 1843/2025).
+  Bandeja en /gerencia/alertas; se auto-resuelven al enviar el reporte o
+  marcar el seguimiento del concepto.
+- **Batería psicosocial** (Res. 2404/2019): instrumentos individuales con
+  custodia separada (solo el psicólogo que los aplicó, contenido cifrado,
+  lecturas auditadas) e informe consolidado agregado con mínimo de
+  anonimato. UI en /psicosocial (rol psicologo_sst: psicologo@demo.com).
+- **Profesiograma**: matriz de exámenes por cargo/empresa (admin del tenant).
+
 **Sin** RIPS ni facturación hasta fase 3 (CLAUDE.md §6).

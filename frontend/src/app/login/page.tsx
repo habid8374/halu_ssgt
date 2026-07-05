@@ -9,6 +9,7 @@ const RUTA_POR_ROL: Record<string, string> = {
   medico: "/consultorio/mi-cola",
   coordinador: "/gerencia",
   empresa_cliente: "/portal-empresa",
+  psicologo_sst: "/psicosocial",
 };
 
 export default function LoginPage() {
