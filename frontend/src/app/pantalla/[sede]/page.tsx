@@ -42,7 +42,8 @@ export default function PantallaPage({ params }: { params: { sede: string } }) {
     <main className="flex min-h-screen flex-col bg-slate-950 p-8 text-white">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/15 text-xl">🩺</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Halu" className="h-11 w-auto" />
           <p className="text-lg font-bold">Halu Salud Ocupacional</p>
         </div>
         <span className={`flex items-center gap-2 text-sm ${conectado ? "text-emerald-400" : "text-red-400"}`}>

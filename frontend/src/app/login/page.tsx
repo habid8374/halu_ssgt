@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiFetch, login, setYo, type Yo } from "@/lib/api";
 
 const RUTA_POR_ROL: Record<string, string> = {
@@ -18,11 +18,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
-  const [esDev, setEsDev] = useState(false);
-
-  useEffect(() => {
-    setEsDev(window.location.hostname.endsWith("localhost"));
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,7 +39,7 @@ export default function LoginPage() {
         setCargando(false);
         return;
       }
-      setYo(yo); // guarda identidad + cookie de rol para el middleware
+      setYo(yo);
       router.push(destino);
       router.refresh();
     } catch {
@@ -54,19 +49,39 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-3xl">
-            🩺
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Halu Salud Ocupacional</h1>
-          <p className="mt-1 text-sm text-gray-500">Ingresa con tu cuenta institucional</p>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      {/* Video de fondo institucional */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      >
+        <source src="/login-bg.mp4" type="video/mp4" />
+      </video>
+      {/* Velo para legibilidad de la tarjeta */}
+      <div className="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]" />
+
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="mb-6 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Halu Salud Ocupacional"
+            className="mx-auto mb-3 h-20 w-auto drop-shadow-lg"
+          />
+          <h1 className="text-2xl font-bold text-white drop-shadow">
+            Halu Salud Ocupacional
+          </h1>
+          <p className="mt-1 text-sm text-white/80">
+            Prevención · Bienestar · Seguridad
+          </p>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl"
+          className="rounded-2xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur"
         >
           <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
             Correo
@@ -75,7 +90,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="recepcion@demo.com"
+              placeholder="tu@correo.com"
               className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none"
             />
           </label>
@@ -104,12 +119,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {esDev && (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
-          <p className="font-semibold text-gray-500">Cuentas demo (contraseña: demo1234)</p>
-          <p className="mt-1">recepcion@demo.com · medico@demo.com · coordinador@demo.com · empresa@demo.com</p>
-        </div>
-        )}
+        <p className="mt-5 text-center text-xs text-white/70">
+          Powered by <span className="font-semibold tracking-wide text-white">AXENTIA</span>{" "}
+          <span className="font-light">technologies</span>
+        </p>
       </div>
     </main>
   );

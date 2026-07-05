@@ -79,9 +79,8 @@ export default function AppShell({
       {/* ------------------------------- Sidebar ------------------------------ */}
       <aside className="fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-gray-200 bg-white">
         <div className="flex items-center gap-2.5 border-b border-gray-200 px-4 py-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-lg">
-            🩺
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Halu" className="h-10 w-auto shrink-0" />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold leading-tight text-gray-900">
               Halu Salud Ocupacional
@@ -136,6 +135,10 @@ export default function AppShell({
           >
             ⏻ Cerrar sesión
           </button>
+          <p className="mt-3 text-center text-[10px] text-gray-400">
+            Powered by <span className="font-semibold tracking-wide text-gray-500">AXENTIA</span>{" "}
+            <span className="font-light">technologies</span>
+          </p>
         </div>
       </aside>
 
