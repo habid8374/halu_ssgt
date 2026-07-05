@@ -142,3 +142,30 @@ class PermisosAccidentesTest(BaseFase2Test):
         r = client.post(f"/api/accidentes/{acc_id}/marcar_enviado/", {"radicado": "RAD-9"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["reporte"]["estado"], "enviado")
+
+
+class RevisionBajoDemandaTest(BaseFase2Test):
+    """La revisión de plazos debe poder dispararse desde la UI (sin comandos)."""
+
+    def test_boton_revisar_genera_alertas(self):
+        import datetime as dt
+
+        from django.utils import timezone
+
+        acc = AccidenteTrabajo.objects.create(
+            trabajador=self.trabajador, empresa=self.empresa,
+            fecha_evento=timezone.localdate() - dt.timedelta(days=10),
+            descripcion="x", registrado_por=self.recepcion,
+        )
+        ReporteFURAT.objects.create(accidente=acc)
+        client = TenantClient(self.tenant)
+        client.force_login(self.coordinador)
+        r = client.post("/api/alertas/revisar/")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["abiertas"], 1)
+        self.assertTrue(Alerta.objects.filter(tipo="furat", vencida=True).exists())
+
+    def test_solo_coordinador_puede_revisar(self):
+        client = TenantClient(self.tenant)
+        client.force_login(self.recepcion)
+        self.assertEqual(client.post("/api/alertas/revisar/").status_code, 403)

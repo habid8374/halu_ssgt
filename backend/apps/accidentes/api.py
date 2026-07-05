@@ -138,3 +138,19 @@ class AlertaViewSet(viewsets.ReadOnlyModelViewSet):
         alerta.resuelta = True
         alerta.save(update_fields=["resuelta"])
         return Response(AlertaSerializer(alerta).data)
+
+    @action(detail=False, methods=["post"])
+    def revisar(self, request):
+        """
+        Revisión de plazos bajo demanda (botón "Revisar ahora" de la UI).
+        Ejecuta la misma lógica del ciclo horario de Celery beat, pero solo
+        para la IPS actual y con respuesta inmediata — sin comandos ni
+        terminal (regla de UX: todo operable desde la interfaz).
+        """
+        from django.utils import timezone
+
+        from .tasks import _revisar_tenant
+
+        generadas = _revisar_tenant(timezone.localdate())
+        abiertas = Alerta.objects.filter(resuelta=False).count()
+        return Response({"revisadas": generadas, "abiertas": abiertas})

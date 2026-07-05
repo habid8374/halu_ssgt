@@ -121,7 +121,14 @@ No adelantar fases: por ejemplo, no construir el motor RIPS en fase 1.
    subdominio de administración). Las entradas de IPS/Dominio no son visibles desde
    el admin de un tenant. La historia clínica y el concepto NUNCA se registran en
    el admin (el control fino de acceso y auditoría vive exclusivamente en la API).
-4. **Navegación por sidebar según rol**: los usuarios finales (profesionales de la
+4. **Cero comandos para operar el negocio**: los usuarios finales son personal
+   administrativo y de la salud — NUNCA se les exige terminal, consola ni
+   comandos de manage.py para ninguna función operativa. Toda capacidad del
+   sistema (incluidas las tareas que también corren automáticas, como la
+   revisión de plazos) debe tener botón o vista en la UI del rol que la
+   necesita (ej.: "Revisar plazos ahora" en /gerencia/alertas). Los comandos
+   de manage.py quedan reservados a infraestructura/desarrollo.
+5. **Navegación por sidebar según rol**: los usuarios finales (profesionales de la
    salud y administrativos) nunca navegan escribiendo URLs. Toda vista alcanzable
    debe tener entrada en el sidebar de su rol (`frontend/src/components/AppShell.tsx`),
    y el middleware de Next.js redirige cualquier URL fuera del rol al home del rol
