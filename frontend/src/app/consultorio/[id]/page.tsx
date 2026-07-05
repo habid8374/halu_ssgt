@@ -24,7 +24,7 @@ export default function ConsultorioPage() {
   return (
     <AppShell titulo="Consultorio — Mi cola de atención">
       {sede !== null ? (
-        <Tablero sedeId={sede} />
+        <Tablero sedeId={sede} hrefAtencion={(id) => `/consultorio/atencion/${id}`} />
       ) : (
         <p className="text-sm text-slate-400">Cargando…</p>
       )}

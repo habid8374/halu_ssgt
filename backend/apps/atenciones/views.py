@@ -10,11 +10,19 @@ from apps.usuarios.permissions import (
 )
 from apps.usuarios.roles import Rol
 
-from .models import Atencion, Consultorio, Sede, Trabajador, TransicionInvalidaError
+from .models import (
+    Atencion,
+    Consultorio,
+    Empresa,
+    Sede,
+    Trabajador,
+    TransicionInvalidaError,
+)
 from .serializers import (
     AtencionSerializer,
     ConsultorioSerializer,
     CrearAtencionSerializer,
+    EmpresaSerializer,
     HistorialEstadoSerializer,
     SedeSerializer,
     TrabajadorSerializer,
@@ -38,6 +46,30 @@ class ConsultorioViewSet(viewsets.ReadOnlyModelViewSet):
         qs = super().get_queryset()
         sede_id = self.request.query_params.get("sede")
         return qs.filter(sede_id=sede_id) if sede_id else qs
+
+
+class EmpresaViewSet(viewsets.ReadOnlyModelViewSet):
+    """Empresas con convenio (para el formulario de admisión)."""
+
+    queryset = Empresa.objects.filter(activo=True).order_by("nombre")
+    serializer_class = EmpresaSerializer
+    permission_classes = [EsRecepcion]
+
+
+class MedicoViewSet(viewsets.ViewSet):
+    """Médicos activos de la sede (para asignar la atención en admisión)."""
+
+    permission_classes = [EsRecepcion]
+
+    def list(self, request):
+        from apps.usuarios.models import Usuario
+
+        medicos = Usuario.objects.filter(
+            rol=Rol.MEDICO, is_active=True, sede=request.user.sede
+        ).order_by("nombre_completo")
+        return Response(
+            [{"id": m.id, "nombre_completo": m.nombre_completo} for m in medicos]
+        )
 
 
 class TrabajadorViewSet(viewsets.ModelViewSet):

@@ -36,7 +36,9 @@ class HistoriaClinicaViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]  # sin DELETE
 
     def get_queryset(self):
-        return scope_historias(self.request.user, super().get_queryset())
+        qs = scope_historias(self.request.user, super().get_queryset())
+        atencion_id = self.request.query_params.get("atencion")
+        return qs.filter(atencion_id=atencion_id) if atencion_id else qs
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -68,7 +70,9 @@ class ConceptoViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
-        return scope_conceptos(self.request.user, super().get_queryset())
+        qs = scope_conceptos(self.request.user, super().get_queryset())
+        atencion_id = self.request.query_params.get("atencion")
+        return qs.filter(atencion_id=atencion_id) if atencion_id else qs
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

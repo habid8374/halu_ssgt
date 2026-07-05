@@ -43,7 +43,16 @@ function MinutosEn({ desde }: { desde: string }) {
   return <span className={`text-[11px] tabular-nums ${alerta}`}>{min} min</span>;
 }
 
-export default function Tablero({ sedeId, soloLectura = false }: { sedeId: number; soloLectura?: boolean }) {
+export default function Tablero({
+  sedeId,
+  soloLectura = false,
+  hrefAtencion,
+}: {
+  sedeId: number;
+  soloLectura?: boolean;
+  /** Si se define, cada tarjeta muestra "Abrir" hacia esa ruta (vista médico). */
+  hrefAtencion?: (id: number) => string;
+}) {
   const [atenciones, setAtenciones] = useState<Atencion[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,17 +141,26 @@ export default function Tablero({ sedeId, soloLectura = false }: { sedeId: numbe
                         </span>
                         <MinutosEn desde={a.estado_actualizado_at} />
                       </div>
-                      {!soloLectura && SIGUIENTES[a.estado].length > 0 && (
+                      {(hrefAtencion || (!soloLectura && SIGUIENTES[a.estado].length > 0)) && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {SIGUIENTES[a.estado].map((sig) => (
-                            <button
-                              key={sig}
-                              onClick={() => transicionar(a, sig)}
-                              className="rounded-md bg-teal-500/15 px-2 py-1 text-[11px] font-semibold text-teal-300 transition hover:bg-teal-500/30"
+                          {hrefAtencion && (
+                            <a
+                              href={hrefAtencion(a.id)}
+                              className="rounded-md bg-violet-500/15 px-2 py-1 text-[11px] font-semibold text-violet-300 transition hover:bg-violet-500/30"
                             >
-                              {ACCION_LABEL[sig]}
-                            </button>
-                          ))}
+                              Abrir atención
+                            </a>
+                          )}
+                          {!soloLectura &&
+                            SIGUIENTES[a.estado].map((sig) => (
+                              <button
+                                key={sig}
+                                onClick={() => transicionar(a, sig)}
+                                className="rounded-md bg-teal-500/15 px-2 py-1 text-[11px] font-semibold text-teal-300 transition hover:bg-teal-500/30"
+                              >
+                                {ACCION_LABEL[sig]}
+                              </button>
+                            ))}
                         </div>
                       )}
                     </motion.article>

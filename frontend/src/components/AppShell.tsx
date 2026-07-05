@@ -29,7 +29,7 @@ interface ItemNav {
 const NAV_POR_ROL: Record<string, ItemNav[]> = {
   recepcion: [
     { href: "/recepcion", label: "Tablero de flujo", icono: "🗂️" },
-    { href: "#admision", label: "Admisión", icono: "📝", deshabilitado: true },
+    { href: "/recepcion/admision", label: "Admisión", icono: "📝" },
     { href: "#agenda", label: "Agenda", icono: "📅", deshabilitado: true },
   ],
   medico: [
