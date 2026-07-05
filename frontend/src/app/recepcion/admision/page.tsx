@@ -143,7 +143,8 @@ export default function AdmisionPage() {
 
   return (
     <AppShell titulo="Admisión — Registrar atención">
-      <form onSubmit={admitir} className="max-w-2xl space-y-6">
+      <form onSubmit={admitir} className="space-y-6">
+       <div className="grid gap-6 lg:grid-cols-2">
         {/* ------------------------- Paso 1: trabajador ------------------------ */}
         <section className="rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">
@@ -202,11 +203,11 @@ export default function AdmisionPage() {
         </section>
 
         {/* -------------------------- Paso 2: atención ------------------------- */}
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <section className="h-fit rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">
             2 · Atención
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             <label className={labelCls}>
               Tipo de examen
               <select value={tipoExamen} onChange={(e) => setTipoExamen(e.target.value)} className={inputCls}>
@@ -235,6 +236,7 @@ export default function AdmisionPage() {
             </label>
           </div>
         </section>
+       </div>
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
