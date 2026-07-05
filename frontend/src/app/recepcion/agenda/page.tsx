@@ -26,8 +26,8 @@ interface Medico {
 }
 
 const inputCls =
-  "mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none";
-const labelCls = "block text-xs font-medium uppercase tracking-wide text-slate-400";
+  "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none";
+const labelCls = "block text-xs font-medium uppercase tracking-wide text-gray-500";
 
 /**
  * Agenda (rol recepción): programa citas y las "admite" cuando el trabajador
@@ -119,21 +119,21 @@ export default function AgendaPage() {
     <AppShell titulo="Agenda — Citas programadas">
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
         {/* ----------------------------- Programar ----------------------------- */}
-        <form onSubmit={programar} className="h-fit rounded-xl border border-slate-800 bg-slate-900 p-5">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-400">Programar cita</h2>
+        <form onSubmit={programar} className="h-fit rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">Programar cita</h2>
 
           <label className={labelCls}>
             Documento del trabajador
             <div className="flex gap-2">
               <input value={numDoc} onChange={(e) => setNumDoc(e.target.value)} className={inputCls} placeholder="1010101010" />
               <button type="button" onClick={buscar}
-                className="mt-1 rounded-lg bg-slate-700 px-4 text-sm font-semibold text-white transition hover:bg-slate-600">
+                className="mt-1 rounded-lg bg-gray-200 px-4 text-sm font-semibold text-gray-900 transition hover:bg-gray-300">
                 Buscar
               </button>
             </div>
           </label>
           {buscado && (
-            <p className={`mt-2 rounded-lg px-3 py-2 text-xs ${trabajador ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+            <p className={`mt-2 rounded-lg px-3 py-2 text-xs ${trabajador ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-700"}`}>
               {trabajador
                 ? `${trabajador.nombres} ${trabajador.apellidos}`
                 : "No existe. Regístralo primero en Admisión."}
@@ -167,51 +167,51 @@ export default function AgendaPage() {
           </label>
 
           {msg && (
-            <p className={`mt-3 rounded-lg px-3 py-2 text-xs ${msg.ok ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+            <p className={`mt-3 rounded-lg px-3 py-2 text-xs ${msg.ok ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
               {msg.texto}
             </p>
           )}
 
           <button type="submit" disabled={!trabajador}
-            className="mt-4 w-full rounded-lg bg-teal-500 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:opacity-40">
+            className="mt-4 w-full rounded-lg bg-teal-600 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-40">
             Programar
           </button>
         </form>
 
         {/* ------------------------- Citas pendientes -------------------------- */}
         <section>
-          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">
             Pendientes ({citas.length})
           </h2>
           {citas.length === 0 ? (
-            <p className="text-sm text-slate-500">No hay citas pendientes.</p>
+            <p className="text-sm text-gray-500">No hay citas pendientes.</p>
           ) : (
             <div className="space-y-2">
               {citas.map((c) => (
                 <article key={c.id}
-                  className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
+                  className="flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-3">
                   <div className="w-36">
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-sm font-bold text-gray-900">
                       {new Date(c.fecha_hora).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
                     </p>
-                    <p className="text-xs text-teal-400">
+                    <p className="text-xs text-teal-600">
                       {new Date(c.fecha_hora).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{c.trabajador_nombre}</p>
-                    <p className="truncate text-xs text-slate-400">
+                    <p className="truncate text-sm font-semibold text-gray-900">{c.trabajador_nombre}</p>
+                    <p className="truncate text-xs text-gray-500">
                       {c.empresa_nombre} · {TIPO_EXAMEN_LABEL[c.tipo_examen] ?? c.tipo_examen}
                       {c.profesional_nombre ? ` · ${c.profesional_nombre}` : ""}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => admitir(c)}
-                      className="rounded-lg bg-teal-500/15 px-3 py-1.5 text-xs font-semibold text-teal-300 transition hover:bg-teal-500/30">
+                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-100">
                       Llegó — Admitir
                     </button>
                     <button onClick={() => cancelar(c)}
-                      className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20">
+                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100">
                       Cancelar
                     </button>
                   </div>

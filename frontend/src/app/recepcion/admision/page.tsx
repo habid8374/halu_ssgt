@@ -37,8 +37,8 @@ const TIPOS_DOC = [
 ] as const;
 
 const inputCls =
-  "mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none";
-const labelCls = "block text-xs font-medium uppercase tracking-wide text-slate-400";
+  "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none";
+const labelCls = "block text-xs font-medium uppercase tracking-wide text-gray-500";
 
 /**
  * Admisión (rol recepción): busca o registra al trabajador y crea la
@@ -145,8 +145,8 @@ export default function AdmisionPage() {
     <AppShell titulo="Admisión — Registrar atención">
       <form onSubmit={admitir} className="max-w-2xl space-y-6">
         {/* ------------------------- Paso 1: trabajador ------------------------ */}
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-400">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">
             1 · Trabajador
           </h2>
           <div className="flex gap-3">
@@ -163,13 +163,13 @@ export default function AdmisionPage() {
               <input value={numDoc} onChange={(e) => setNumDoc(e.target.value)} className={inputCls} placeholder="1010101010" required />
             </label>
             <button type="button" onClick={buscar}
-              className="mt-5 h-9 rounded-lg bg-slate-700 px-4 text-sm font-semibold text-white transition hover:bg-slate-600">
+              className="mt-5 h-9 rounded-lg bg-gray-200 px-4 text-sm font-semibold text-gray-900 transition hover:bg-gray-300">
               Buscar
             </button>
           </div>
 
           {buscado && (
-            <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${trabajador ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+            <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${trabajador ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-700"}`}>
               {trabajador
                 ? `Trabajador encontrado: ${trabajador.nombres} ${trabajador.apellidos}`
                 : "No existe: diligencia los datos para registrarlo."}
@@ -202,8 +202,8 @@ export default function AdmisionPage() {
         </section>
 
         {/* -------------------------- Paso 2: atención ------------------------- */}
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-400">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">
             2 · Atención
           </h2>
           <div className="grid grid-cols-3 gap-3">
@@ -236,10 +236,10 @@ export default function AdmisionPage() {
           </div>
         </section>
 
-        {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
         <button type="submit" disabled={guardando}
-          className="rounded-lg bg-teal-500 px-6 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:opacity-50">
+          className="rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50">
           {guardando ? "Registrando…" : "Registrar atención"}
         </button>
       </form>

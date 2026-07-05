@@ -48,8 +48,8 @@ const APTITUDES = [
 ] as const;
 
 const areaCls =
-  "mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none";
-const labelCls = "block text-xs font-medium uppercase tracking-wide text-slate-400";
+  "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none";
+const labelCls = "block text-xs font-medium uppercase tracking-wide text-gray-500";
 
 /**
  * Atención en consultorio (rol médico). Historia clínica RESERVADA (solo el
@@ -162,40 +162,40 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
   return (
     <AppShell titulo={`Atención #${params.id}`}>
       <div className="mb-4">
-        <Link href="/consultorio/mi-cola" className="text-sm text-teal-400 hover:underline">
+        <Link href="/consultorio/mi-cola" className="text-sm text-teal-600 hover:underline">
           ← Volver a mi cola
         </Link>
       </div>
 
       {atencion && (
-        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 px-5 py-4">
+        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4">
           <div>
-            <p className="text-lg font-bold text-white">{atencion.trabajador_nombre}</p>
-            <p className="text-sm text-slate-400">{atencion.empresa_nombre}</p>
+            <p className="text-lg font-bold text-gray-900">{atencion.trabajador_nombre}</p>
+            <p className="text-sm text-gray-500">{atencion.empresa_nombre}</p>
           </div>
-          <span className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300">
+          <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
             {TIPO_EXAMEN_LABEL[atencion.tipo_examen] ?? atencion.tipo_examen}
           </span>
-          <span className="rounded bg-violet-500/15 px-2 py-1 text-xs font-semibold text-violet-300">
+          <span className="rounded bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">
             {atencion.estado}
           </span>
         </div>
       )}
 
       {msg && (
-        <p className={`mb-4 rounded-lg px-3 py-2 text-sm ${msg.tipo === "ok" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+        <p className={`mb-4 rounded-lg px-3 py-2 text-sm ${msg.tipo === "ok" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
           {msg.texto}
         </p>
       )}
 
       <div className="grid gap-6 xl:grid-cols-2">
         {/* --------------------- Historia clínica (reservada) -------------------- */}
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-teal-400">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-teal-600">
               Historia clínica ocupacional
             </h2>
-            <span className="rounded bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-400">
+            <span className="rounded bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-600">
               Reservada — solo médico
             </span>
           </div>
@@ -213,28 +213,28 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
             ))}
           </div>
           <button onClick={guardarHistoria} disabled={guardando}
-            className="mt-4 rounded-lg bg-teal-500 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400 disabled:opacity-50">
+            className="mt-4 rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50">
             Guardar historia
           </button>
         </section>
 
         {/* ------------------- Concepto (visible al empleador) ------------------- */}
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-teal-400">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-teal-600">
               Concepto médico ocupacional
             </h2>
             {concepto.firmado ? (
-              <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-400">
+              <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-600">
                 ✓ Firmado {concepto.fecha_emision}
               </span>
             ) : (
-              <span className="rounded bg-slate-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-300">
+              <span className="rounded bg-gray-200 px-2 py-0.5 text-[10px] font-semibold uppercase text-gray-600">
                 Borrador
               </span>
             )}
           </div>
-          <p className="mb-4 text-xs text-slate-500">
+          <p className="mb-4 text-xs text-gray-500">
             Este es el único documento que la empresa verá en su portal (Res. 1843/2025).
             No incluye contenido de la historia clínica.
           </p>
@@ -268,12 +268,12 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
           {!concepto.firmado && (
             <div className="mt-4 flex gap-3">
               <button onClick={guardarConcepto} disabled={guardando}
-                className="rounded-lg bg-slate-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-600 disabled:opacity-50">
+                className="rounded-lg bg-gray-200 px-5 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-300 disabled:opacity-50">
                 Guardar borrador
               </button>
               <button onClick={firmar} disabled={guardando || !concepto.id}
                 title={!concepto.id ? "Guarda el borrador primero" : "Requiere licencia SST vigente"}
-                className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50">
+                className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:opacity-50">
                 ✍️ Firmar concepto
               </button>
             </div>

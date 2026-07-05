@@ -25,7 +25,7 @@ export default function RecepcionPage() {
       {sede !== null ? (
         <Tablero sedeId={sede} />
       ) : (
-        <p className="text-sm text-slate-400">Cargando…</p>
+        <p className="text-sm text-gray-500">Cargando…</p>
       )}
     </AppShell>
   );

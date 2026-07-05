@@ -15,12 +15,12 @@ import { useAtencionesSocket, type EventoAtencion } from "@/hooks/useAtencionesS
 
 // Colores del semáforo por estado (tarjeta y columna).
 const COLOR: Record<Estado, { borde: string; fondo: string; punto: string }> = {
-  registrado: { borde: "border-slate-500/40", fondo: "bg-slate-500/10", punto: "bg-slate-400" },
-  espera: { borde: "border-amber-500/40", fondo: "bg-amber-500/10", punto: "bg-amber-400" },
+  registrado: { borde: "border-gray-300", fondo: "bg-gray-100", punto: "bg-slate-400" },
+  espera: { borde: "border-amber-500/40", fondo: "bg-amber-50", punto: "bg-amber-400" },
   llamado: { borde: "border-blue-500/40", fondo: "bg-blue-500/10", punto: "bg-blue-400" },
   atencion: { borde: "border-violet-500/40", fondo: "bg-violet-500/10", punto: "bg-violet-400" },
   paraclinicos: { borde: "border-cyan-500/40", fondo: "bg-cyan-500/10", punto: "bg-cyan-400" },
-  finalizado: { borde: "border-emerald-500/40", fondo: "bg-emerald-500/10", punto: "bg-emerald-400" },
+  finalizado: { borde: "border-emerald-500/40", fondo: "bg-emerald-50", punto: "bg-emerald-400" },
 };
 
 const ACCION_LABEL: Record<Estado, string> = {
@@ -39,7 +39,7 @@ function MinutosEn({ desde }: { desde: string }) {
     return () => clearInterval(t);
   }, []);
   const min = Math.max(0, Math.round((Date.now() - new Date(desde).getTime()) / 60_000));
-  const alerta = min >= 30 ? "text-red-400" : min >= 15 ? "text-amber-400" : "text-slate-500";
+  const alerta = min >= 30 ? "text-red-600" : min >= 15 ? "text-amber-700" : "text-gray-500";
   return <span className={`text-[11px] tabular-nums ${alerta}`}>{min} min</span>;
 }
 
@@ -97,10 +97,10 @@ export default function Tablero({
     <div>
       <div className="mb-4 flex items-center gap-2 text-xs">
         <span className={`h-2 w-2 rounded-full ${conectado ? "bg-emerald-400" : "bg-red-400"}`} />
-        <span className="text-slate-400">
+        <span className="text-gray-500">
           {conectado ? "Tiempo real conectado" : "Reconectando…"}
         </span>
-        {error && <span className="text-red-400">· {error}</span>}
+        {error && <span className="text-red-600">· {error}</span>}
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -112,11 +112,11 @@ export default function Tablero({
               <header className="mb-2 flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`h-2 w-2 rounded-full ${c.punto}`} />
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-200">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-700">
                     {ESTADO_LABEL[estado]}
                   </h2>
                 </div>
-                <span className="rounded-full bg-slate-950/60 px-2 py-0.5 text-[11px] font-bold text-slate-300">
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-600">
                   {items.length}
                 </span>
               </header>
@@ -131,12 +131,12 @@ export default function Tablero({
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="rounded-lg border border-slate-700/60 bg-slate-900 p-2.5 shadow"
+                      className="rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm"
                     >
-                      <p className="truncate text-sm font-semibold text-white">{a.trabajador_nombre}</p>
-                      <p className="truncate text-[11px] text-slate-400">{a.empresa_nombre}</p>
+                      <p className="truncate text-sm font-semibold text-gray-900">{a.trabajador_nombre}</p>
+                      <p className="truncate text-[11px] text-gray-500">{a.empresa_nombre}</p>
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-300">
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
                           {TIPO_EXAMEN_LABEL[a.tipo_examen] ?? a.tipo_examen}
                         </span>
                         <MinutosEn desde={a.estado_actualizado_at} />
@@ -146,7 +146,7 @@ export default function Tablero({
                           {hrefAtencion && (
                             <a
                               href={hrefAtencion(a.id)}
-                              className="rounded-md bg-violet-500/15 px-2 py-1 text-[11px] font-semibold text-violet-300 transition hover:bg-violet-500/30"
+                              className="rounded-md bg-violet-50 px-2 py-1 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100"
                             >
                               Abrir atención
                             </a>
@@ -156,7 +156,7 @@ export default function Tablero({
                               <button
                                 key={sig}
                                 onClick={() => transicionar(a, sig)}
-                                className="rounded-md bg-teal-500/15 px-2 py-1 text-[11px] font-semibold text-teal-300 transition hover:bg-teal-500/30"
+                                className="rounded-md bg-teal-50 px-2 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
                               >
                                 {ACCION_LABEL[sig]}
                               </button>

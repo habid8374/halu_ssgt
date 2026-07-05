@@ -14,15 +14,15 @@ export default function GerenciaPage() {
   return (
     <AppShell titulo="Gerencia — Tablero de sedes">
       <div className="mb-4 flex items-center gap-2">
-        <label className="text-xs text-slate-400">Sede:</label>
+        <label className="text-xs text-gray-500">Sede:</label>
         <select
           value={sede}
           onChange={(e) => setSede(Number(e.target.value))}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-white"
+          className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
         >
           <option value={1}>Sede Principal</option>
         </select>
-        <span className="text-xs text-slate-500">· Vista de solo lectura</span>
+        <span className="text-xs text-gray-500">· Vista de solo lectura</span>
       </div>
       <Tablero sedeId={sede} soloLectura />
     </AppShell>

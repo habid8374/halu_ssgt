@@ -26,7 +26,7 @@ export default function ConsultorioPage() {
       {sede !== null ? (
         <Tablero sedeId={sede} hrefAtencion={(id) => `/consultorio/atencion/${id}`} />
       ) : (
-        <p className="text-sm text-slate-400">Cargando…</p>
+        <p className="text-sm text-gray-500">Cargando…</p>
       )}
     </AppShell>
   );

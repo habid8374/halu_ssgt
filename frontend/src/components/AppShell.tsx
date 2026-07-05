@@ -68,18 +68,18 @@ export default function AppShell({
   const nav = yo ? (NAV_POR_ROL[yo.rol] ?? []) : [];
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen bg-gray-100">
       {/* ------------------------------- Sidebar ------------------------------ */}
-      <aside className="fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-slate-800 bg-slate-900">
-        <div className="flex items-center gap-2.5 border-b border-slate-800 px-4 py-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-lg">
+      <aside className="fixed inset-y-0 left-0 z-20 flex w-60 flex-col border-r border-gray-200 bg-white">
+        <div className="flex items-center gap-2.5 border-b border-gray-200 px-4 py-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-lg">
             🩺
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold leading-tight text-white">
+            <p className="truncate text-sm font-bold leading-tight text-gray-900">
               Halu Salud Ocupacional
             </p>
-            <p className="truncate text-[11px] leading-tight text-slate-500">
+            <p className="truncate text-[11px] leading-tight text-gray-500">
               Sistema para IPS
             </p>
           </div>
@@ -91,11 +91,11 @@ export default function AppShell({
               <span
                 key={item.href}
                 title="Disponible próximamente"
-                className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600"
+                className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-400"
               >
                 <span className="text-base opacity-50">{item.icono}</span>
                 {item.label}
-                <span className="ml-auto rounded bg-slate-800 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-slate-500">
+                <span className="ml-auto rounded bg-gray-100 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-gray-500">
                   Pronto
                 </span>
               </span>
@@ -105,8 +105,8 @@ export default function AppShell({
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                   pathname === item.href
-                    ? "bg-teal-500/15 text-teal-300"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    ? "bg-teal-50 text-teal-700"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 <span className="text-base">{item.icono}</span>
@@ -116,16 +116,16 @@ export default function AppShell({
           )}
         </nav>
 
-        <div className="border-t border-slate-800 p-3">
+        <div className="border-t border-gray-200 p-3">
           {yo && (
-            <div className="mb-2 rounded-lg bg-slate-950/60 px-3 py-2.5">
-              <p className="truncate text-sm font-semibold text-white">{yo.nombre_completo}</p>
-              <p className="truncate text-xs text-teal-400">{ROL_LABEL[yo.rol] ?? yo.rol}</p>
+            <div className="mb-2 rounded-lg bg-gray-100 px-3 py-2.5">
+              <p className="truncate text-sm font-semibold text-gray-900">{yo.nombre_completo}</p>
+              <p className="truncate text-xs text-teal-600">{ROL_LABEL[yo.rol] ?? yo.rol}</p>
             </div>
           )}
           <button
             onClick={logout}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-300 transition hover:border-red-500/50 hover:text-red-400"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-red-500/50 hover:text-red-600"
           >
             ⏻ Cerrar sesión
           </button>
@@ -134,8 +134,8 @@ export default function AppShell({
 
       {/* ------------------------------ Contenido ----------------------------- */}
       <div className="ml-60 flex-1">
-        <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 px-6 py-4 backdrop-blur">
-          <h1 className="text-lg font-bold text-white">{titulo}</h1>
+        <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 px-6 py-4 backdrop-blur">
+          <h1 className="text-lg font-bold text-gray-900">{titulo}</h1>
         </header>
         <main className="p-6">{children}</main>
       </div>
