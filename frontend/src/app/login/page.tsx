@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch, login, setYo, type Yo } from "@/lib/api";
 
 const RUTA_POR_ROL: Record<string, string> = {
@@ -18,6 +18,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [esDev, setEsDev] = useState(false);
+
+  useEffect(() => {
+    setEsDev(window.location.hostname.endsWith("localhost"));
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,8 +31,21 @@ export default function LoginPage() {
     try {
       await login(email, password);
       const yo = await apiFetch<Yo>("/me/");
+      const destino = RUTA_POR_ROL[yo.rol];
+      if (!destino) {
+        // admin_sistema / superusuario: su puerta es el panel administrativo.
+        const { setSesion } = await import("@/lib/api");
+        setSesion(null);
+        setError(
+          "Esta cuenta es de administración de plataforma. Ingresa por el panel " +
+            "administrativo (/admin del dominio del servidor). Para usar la app, " +
+            "crea allí un usuario con rol operativo (p. ej. coordinador)."
+        );
+        setCargando(false);
+        return;
+      }
       setYo(yo); // guarda identidad + cookie de rol para el middleware
-      router.push(RUTA_POR_ROL[yo.rol] ?? "/login");
+      router.push(destino);
       router.refresh();
     } catch {
       setError("Correo o contraseña incorrectos.");
@@ -86,10 +104,12 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {esDev && (
         <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
           <p className="font-semibold text-gray-500">Cuentas demo (contraseña: demo1234)</p>
           <p className="mt-1">recepcion@demo.com · medico@demo.com · coordinador@demo.com · empresa@demo.com</p>
         </div>
+        )}
       </div>
     </main>
   );
