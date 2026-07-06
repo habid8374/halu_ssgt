@@ -5,6 +5,7 @@ from rest_framework import serializers
 from apps.usuarios.models import Profesional
 
 from .models import (
+    CodigoCups,
     ConceptoMedicoOcupacional,
     Diagnostico,
     HistoriaClinicaOcupacional,
@@ -12,6 +13,12 @@ from .models import (
     OrdenMedica,
     Receta,
 )
+
+
+class CodigoCupsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodigoCups
+        fields = ["id", "codigo", "nombre", "seccion"]
 
 
 class DiagnosticoSerializer(serializers.ModelSerializer):

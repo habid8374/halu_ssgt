@@ -10,6 +10,7 @@ router.register("conceptos", views.ConceptoViewSet, basename="concepto")
 router.register("diagnosticos", views.DiagnosticoViewSet, basename="diagnostico")
 router.register("ordenes", views.OrdenMedicaViewSet, basename="orden")
 router.register("recetas", views.RecetaViewSet, basename="receta")
+router.register("cups", views.CupsViewSet, basename="cups")
 router.register("psicosocial/instrumentos", InstrumentoViewSet, basename="instrumento")
 
 urlpatterns = router.urls + [

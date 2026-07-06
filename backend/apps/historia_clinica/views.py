@@ -1,3 +1,6 @@
+import csv
+import io
+
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -7,6 +10,7 @@ from apps.usuarios.audit import ip_de, registrar
 from apps.usuarios.models import AccionAudit
 from apps.usuarios.permissions import (
     EsMedicoTratante,
+    GestionRecursosIPS,
     PuedeVerConcepto,
     PuedeVerHistoriaClinica,
     scope_conceptos,
@@ -15,6 +19,7 @@ from apps.usuarios.permissions import (
 from apps.usuarios.roles import Rol
 
 from .models import (
+    CodigoCups,
     ConceptoMedicoOcupacional,
     Diagnostico,
     HistoriaClinicaOcupacional,
@@ -22,6 +27,7 @@ from .models import (
     Receta,
 )
 from .serializers import (
+    CodigoCupsSerializer,
     ConceptoSerializer,
     DiagnosticoSerializer,
     FirmarConceptoSerializer,
@@ -154,3 +160,92 @@ class RecetaViewSet(viewsets.ModelViewSet):
         ).select_related("profesional").prefetch_related("medicamentos")
         atencion_id = self.request.query_params.get("atencion")
         return qs.filter(atencion_id=atencion_id) if atencion_id else qs
+
+
+def _parsear_cups(texto: str):
+    """
+    Extrae (codigo, nombre, seccion) de un CSV del CUPS oficial. Tolera
+    delimitadores «;», «,» o tab, con o sin encabezado, y toma el código de la
+    primera columna y la descripción de la segunda (sección opcional, tercera).
+    """
+    muestra = texto[:4096]
+    try:
+        delim = csv.Sniffer().sniff(muestra, delimiters=";,\t|").delimiter
+    except csv.Error:
+        delim = ";" if muestra.count(";") >= muestra.count(",") else ","
+    filas = []
+    for cols in csv.reader(io.StringIO(texto), delimiter=delim):
+        if len(cols) < 2:
+            continue
+        codigo = cols[0].strip().strip('"').replace(" ", "")
+        nombre = cols[1].strip().strip('"')
+        # Descarta encabezados o filas sin código alfanumérico plausible.
+        if not codigo or not nombre or not any(ch.isdigit() for ch in codigo):
+            continue
+        if len(codigo) > 10:
+            continue
+        seccion = cols[2].strip().strip('"') if len(cols) > 2 else ""
+        filas.append((codigo, nombre[:255], seccion[:120]))
+    return filas
+
+
+class CupsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Catálogo CUPS buscable (procedimientos/paraclínicos). Lectura para los
+    roles operativos; el coordinador importa el archivo oficial del SISPRO
+    con la acción `importar` (upsert por código, sin comandos).
+    """
+
+    serializer_class = CodigoCupsSerializer
+    permission_classes = [GestionRecursosIPS]
+
+    def get_queryset(self):
+        qs = CodigoCups.objects.filter(activo=True)
+        q = (self.request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(nombre__icontains=q) | qs.filter(codigo__startswith=q)
+        return qs.distinct()[:50]
+
+    @action(detail=False, methods=["post"])
+    def importar(self, request):
+        """Carga masiva del CUPS oficial (CSV). Solo coordinador."""
+        archivo = request.FILES.get("archivo")
+        if archivo is None:
+            return Response({"detail": "Adjunta el archivo CSV del CUPS."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        raw = archivo.read()
+        for enc in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                texto = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            return Response({"detail": "No se pudo leer el archivo (codificación)."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        filas = _parsear_cups(texto)
+        if not filas:
+            return Response({"detail": "No se reconocieron filas de CUPS en el archivo."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        existentes = {c.codigo: c for c in CodigoCups.objects.all()}
+        crear, actualizar = [], []
+        vistos = set()
+        for codigo, nombre, seccion in filas:
+            if codigo in vistos:
+                continue
+            vistos.add(codigo)
+            actual = existentes.get(codigo)
+            if actual is None:
+                crear.append(CodigoCups(codigo=codigo, nombre=nombre, seccion=seccion, activo=True))
+            elif actual.nombre != nombre or actual.seccion != seccion or not actual.activo:
+                actual.nombre, actual.seccion, actual.activo = nombre, seccion, True
+                actualizar.append(actual)
+        CodigoCups.objects.bulk_create(crear, batch_size=1000, ignore_conflicts=True)
+        if actualizar:
+            CodigoCups.objects.bulk_update(actualizar, ["nombre", "seccion", "activo"], batch_size=1000)
+        return Response({
+            "creados": len(crear), "actualizados": len(actualizar),
+            "total": CodigoCups.objects.count(),
+        })

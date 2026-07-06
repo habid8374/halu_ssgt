@@ -236,6 +236,36 @@ class ModuloMedicoTest(BasePermisosTest):
         self.assertEqual(r.status_code, 400)
 
 
+class CupsCatalogoTest(BasePermisosTest):
+    """Catálogo CUPS: búsqueda (roles operativos) e importación (coordinador)."""
+
+    def test_medico_busca_cups(self):
+        r = self._get(self.medico, "/api/cups/?q=010101")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(any(c["codigo"] == "010101" for c in r.json()))
+
+    def test_recepcion_busca_pero_no_importa(self):
+        self.assertEqual(self._get(self.recepcion, "/api/cups/?q=hemo").status_code, 200)
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.recepcion)
+        archivo = SimpleUploadedFile("cups.csv", b"999999;PRUEBA;Seccion\n", content_type="text/csv")
+        r = self.client.post("/api/cups/importar/", {"archivo": archivo})
+        self.assertEqual(r.status_code, 403)
+
+    def test_coordinador_importa_cups(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .models import CodigoCups
+
+        self.client.force_login(self.coordinador)
+        contenido = "Codigo;Nombre;Seccion\n999998;PROCEDIMIENTO NUEVO;Prueba\n".encode()
+        archivo = SimpleUploadedFile("cups.csv", contenido, content_type="text/csv")
+        r = self.client.post("/api/cups/importar/", {"archivo": archivo})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertGreaterEqual(r.json()["creados"], 1)
+        self.assertTrue(CodigoCups.objects.filter(codigo="999998").exists())
+
+
 class PsicosocialCustodiaTest(BasePermisosTest):
     """Regla 4 (Res. 2404/2019): custodia separada de instrumentos."""
 

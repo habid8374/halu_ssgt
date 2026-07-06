@@ -98,6 +98,23 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return res.json() as Promise<T>;
 }
 
+/** Subida de archivos (multipart). No fija Content-Type: lo pone el navegador. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const sesion = getSesion();
+  const res = await fetch(`${apiUrl()}${path}`, {
+    method: "POST",
+    body: form,
+    headers: sesion ? { Authorization: `Bearer ${sesion.access}` } : {},
+  });
+  if (res.status === 401) {
+    setSesion(null);
+    if (typeof window !== "undefined") window.location.href = "/login";
+    throw new Error("Sesión expirada");
+  }
+  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+  return res.json() as Promise<T>;
+}
+
 export const ESTADOS = [
   "registrado",
   "espera",

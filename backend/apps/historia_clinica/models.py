@@ -391,6 +391,28 @@ class Receta(models.Model):
         return f"Receta #{self.pk} — atención #{self.atencion_id}"
 
 
+class CodigoCups(models.Model):
+    """
+    Catálogo CUPS (Clasificación Única de Procedimientos en Salud, MinSalud).
+    Referencia buscable para ordenar procedimientos/paraclínicos. Se siembra
+    con un set inicial de salud ocupacional y se completa importando el archivo
+    oficial del SISPRO desde la app (rol coordinador) — sin comandos.
+    """
+
+    codigo = models.CharField(max_length=10, unique=True, db_index=True)
+    nombre = models.CharField(max_length=255)
+    seccion = models.CharField(max_length=120, blank=True, default="")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Código CUPS"
+        verbose_name_plural = "Códigos CUPS"
+        ordering = ["codigo"]
+
+    def __str__(self):
+        return f"{self.codigo} — {self.nombre}"
+
+
 class MedicamentoRecetado(models.Model):
     """Renglón de medicamento de una receta."""
 

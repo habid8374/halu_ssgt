@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Combobox, { type ItemCatalogo } from "@/components/Combobox";
+import AsyncCombobox from "@/components/AsyncCombobox";
 import { cargarCie10 } from "@/lib/catalogos";
 import { imprimirDocumento, esc, type EncabezadoImpresion } from "@/lib/imprimir";
 import { apiFetch } from "@/lib/api";
@@ -48,8 +49,12 @@ export default function OrdenesSection({
   const [lista, setLista] = useState<Orden[]>([]);
   const [cie10, setCie10] = useState<ItemCatalogo[]>([]);
   const [dx, setDx] = useState<ItemCatalogo | null>(null);
+  const [cups, setCups] = useState<ItemCatalogo | null>(null);
   const [f, setF] = useState<Record<string, string>>({ ...VACIO });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  const buscarCups = (q: string) =>
+    apiFetch<ItemCatalogo[]>(`/cups/?q=${encodeURIComponent(q)}`);
 
   const cargar = useCallback(async () => {
     setLista(await apiFetch<Orden[]>(`/ordenes/?atencion=${atencionId}`));
@@ -66,11 +71,11 @@ export default function OrdenesSection({
       method: "POST",
       body: JSON.stringify({
         atencion: atencionId, tipo: f.tipo, descripcion: f.descripcion,
-        codigo_cups: f.codigo_cups, cantidad: Number(f.cantidad) || 1,
+        codigo_cups: cups?.codigo ?? f.codigo_cups, cantidad: Number(f.cantidad) || 1,
         diagnostico_cie10: dx?.codigo ?? "", indicaciones: f.indicaciones,
       }),
     });
-    setF({ ...VACIO }); setDx(null);
+    setF({ ...VACIO }); setDx(null); setCups(null);
     void cargar();
   }
 
@@ -139,12 +144,18 @@ export default function OrdenesSection({
           <label className={labelCls}>Cantidad
             <input type="number" min="1" value={f.cantidad} onChange={(e) => set("cantidad", e.target.value)} className={inputCls} />
           </label>
+          <label className={`${labelCls} md:col-span-2`}>Procedimiento CUPS (buscar en catálogo)
+            <div className="mt-1">
+              <AsyncCombobox buscar={buscarCups} seligido={cups} placeholder="Buscar por código o nombre…"
+                onSelect={(c) => {
+                  setCups(c);
+                  if (c && !f.descripcion.trim()) set("descripcion", c.nombre);
+                }} />
+            </div>
+          </label>
           <label className={`${labelCls} md:col-span-2`}>Descripción (estudio / servicio) *
             <input value={f.descripcion} onChange={(e) => set("descripcion", e.target.value)} className={inputCls}
               placeholder="Hemograma, RX de tórax, audiometría…" />
-          </label>
-          <label className={labelCls}>Código CUPS (opcional)
-            <input value={f.codigo_cups} onChange={(e) => set("codigo_cups", e.target.value)} className={inputCls} />
           </label>
           <label className={labelCls}>Diagnóstico relacionado (CIE-10)
             <div className="mt-1">
