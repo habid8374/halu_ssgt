@@ -17,6 +17,8 @@ export interface EventoAtencion {
   consultorio_nombre?: string | null;
   trabajador_nombre?: string;
   timestamp?: string;
+  /** true cuando el evento es una admisión/activación nueva (paciente que entra). */
+  creada?: boolean;
 }
 
 export function useAtencionesSocket(

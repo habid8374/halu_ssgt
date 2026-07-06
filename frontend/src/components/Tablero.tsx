@@ -12,6 +12,9 @@ import {
   type Estado,
 } from "@/lib/api";
 import { useAtencionesSocket, type EventoAtencion } from "@/hooks/useAtencionesSocket";
+import { beep, sonidoActivo, setSonidoActivo } from "@/lib/aviso";
+
+interface Aviso { id: number; nombre: string }
 
 // Colores del semáforo por estado (tarjeta y columna).
 const COLOR: Record<Estado, { borde: string; fondo: string; punto: string }> = {
@@ -55,6 +58,14 @@ export default function Tablero({
 }) {
   const [atenciones, setAtenciones] = useState<Atencion[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [sonido, setSonido] = useState(true);
+
+  useEffect(() => { setSonido(sonidoActivo()); }, []);
+
+  const quitarAviso = useCallback((id: number) => {
+    setAvisos((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
@@ -74,11 +85,26 @@ export default function Tablero({
   // desde la API (fuente de verdad) sin polling.
   const onEvento = useCallback(
     (e: EventoAtencion) => {
-      if (e.type === "atencion") void cargar();
+      if (e.type !== "atencion") return;
+      void cargar();
+      // Paciente que ENTRA (admisión o activación de cita): aviso visible + sonoro.
+      if (e.creada) {
+        const id = e.atencion_id ?? Date.now();
+        setAvisos((prev) => [{ id, nombre: e.trabajador_nombre ?? "Paciente" }, ...prev].slice(0, 4));
+        setTimeout(() => quitarAviso(id), 7000);
+        if (sonidoActivo()) beep();
+      }
     },
-    [cargar],
+    [cargar, quitarAviso],
   );
   const { conectado } = useAtencionesSocket(sedeId, onEvento);
+
+  function alternarSonido() {
+    const nuevo = !sonido;
+    setSonido(nuevo);
+    setSonidoActivo(nuevo);
+    if (nuevo) beep(); // confirma que suena (y "desbloquea" el audio con el clic)
+  }
 
   async function transicionar(a: Atencion, estado: Estado) {
     // Optimista: la confirmación llega por el WS.
@@ -95,12 +121,42 @@ export default function Tablero({
 
   return (
     <div>
+      {/* Avisos de "nuevo paciente en sala" (esquina superior derecha). */}
+      <div className="pointer-events-none fixed right-4 top-4 z-50 flex w-72 flex-col gap-2">
+        <AnimatePresence>
+          {avisos.map((a) => (
+            <motion.div
+              key={a.id}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="pointer-events-auto flex items-start gap-3 rounded-xl border border-teal-200 bg-white p-3 shadow-lg"
+            >
+              <span className="text-xl">🔔</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">Nuevo paciente en sala</p>
+                <p className="truncate text-sm font-semibold text-gray-900">{a.nombre}</p>
+              </div>
+              <button onClick={() => quitarAviso(a.id)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       <div className="mb-4 flex items-center gap-2 text-xs">
         <span className={`h-2 w-2 rounded-full ${conectado ? "bg-emerald-400" : "bg-red-400"}`} />
         <span className="text-gray-500">
           {conectado ? "Tiempo real conectado" : "Reconectando…"}
         </span>
         {error && <span className="text-red-600">· {error}</span>}
+        <button
+          onClick={alternarSonido}
+          title={sonido ? "Silenciar aviso de nuevo paciente" : "Activar aviso sonoro"}
+          className="ml-auto rounded-md bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-200"
+        >
+          {sonido ? "🔔 Aviso sonoro" : "🔕 Silenciado"}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
