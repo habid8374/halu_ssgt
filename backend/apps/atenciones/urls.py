@@ -13,6 +13,7 @@ router.register("atenciones", views.AtencionViewSet, basename="atencion")
 router.register("citas", views.CitaViewSet, basename="cita")
 router.register("profesiogramas", views.ProfesiogramaViewSet, basename="profesiograma")
 router.register("pruebas", views.PruebaAtencionViewSet, basename="prueba")
+router.register("autorizaciones", views.AutorizacionServicioViewSet, basename="autorizacion")
 router.register("me", views.MeView, basename="me")
 
 urlpatterns = router.urls + [

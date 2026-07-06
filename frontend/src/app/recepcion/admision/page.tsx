@@ -86,6 +86,7 @@ export default function AdmisionPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [autorizado, setAutorizado] = useState<{ numero: string } | false | null>(null);
 
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const toggleprueba = (t: string) =>
@@ -127,9 +128,13 @@ export default function AdmisionPage() {
   }, []);
 
   async function buscar() {
-    setError(null); setBuscado(false); setExistente(null);
-    if (!f.numero_documento.trim()) return;
-    const res = await apiFetch<Trabajador[]>(`/trabajadores/?documento=${f.numero_documento.trim()}`);
+    setError(null); setBuscado(false); setExistente(null); setAutorizado(null);
+    const doc = f.numero_documento.trim();
+    if (!doc) return;
+    void apiFetch<{ id: number; numero: string }[]>(`/autorizaciones/?documento=${doc}`)
+      .then((a) => setAutorizado(a.length > 0 ? a[0] : false))
+      .catch(() => setAutorizado(null));
+    const res = await apiFetch<Trabajador[]>(`/trabajadores/?documento=${doc}`);
     setBuscado(true);
     if (res.length > 0) {
       const t = res[0];
@@ -210,6 +215,13 @@ export default function AdmisionPage() {
           {buscado && (
             <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${existente ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-700"}`}>
               {existente ? "Trabajador encontrado: sus datos ya están registrados (solo lectura)." : "No existe: diligencia los datos para registrarlo."}
+            </p>
+          )}
+          {autorizado !== null && (
+            <p className={`mt-2 rounded-lg px-3 py-2 text-sm ${autorizado ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+              {autorizado
+                ? `✅ Autorizado por la empresa${autorizado.numero ? ` (N.º ${autorizado.numero})` : ""}.`
+                : "⚠️ Sin autorización activa de la empresa. Verifica antes de atender."}
             </p>
           )}
         </section>

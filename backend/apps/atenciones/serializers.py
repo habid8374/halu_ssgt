@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import (
     Atencion,
+    AutorizacionServicio,
     Cita,
     ConfiguracionIPS,
     Consultorio,
@@ -14,6 +15,18 @@ from .models import (
     TipoExamenRequerido,
     Trabajador,
 )
+
+
+class AutorizacionServicioSerializer(serializers.ModelSerializer):
+    empresa_nombre = serializers.CharField(source="empresa.nombre", read_only=True)
+
+    class Meta:
+        model = AutorizacionServicio
+        fields = [
+            "id", "empresa", "empresa_nombre", "trabajador_documento", "trabajador_nombre",
+            "tipo_examen", "cargo", "numero", "vigencia_hasta", "estado", "created_at",
+        ]
+        read_only_fields = ["estado"]
 
 
 class ConfiguracionIPSSerializer(serializers.ModelSerializer):

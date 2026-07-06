@@ -188,3 +188,45 @@ class FacturaARLViewSet(viewsets.ModelViewSet):
         factura.estado = "validada"
         factura.save(update_fields=["cuv", "estado"])
         return Response(FacturaARLSerializer(factura).data)
+
+
+# ---------------------------------------------------------------------------
+# Glosas (conciliación de discrepancias de facturación)
+# ---------------------------------------------------------------------------
+from .models import EstadoGlosa, Glosa  # noqa: E402
+
+
+class GlosaSerializer(serializers.ModelSerializer):
+    factura_numero = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Glosa
+        fields = [
+            "id", "factura", "factura_arl", "factura_numero", "codigo", "descripcion",
+            "valor", "estado", "respuesta", "created_at", "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+    def get_factura_numero(self, obj):
+        if obj.factura_id:
+            return obj.factura.numero or f"borrador #{obj.factura_id}"
+        if obj.factura_arl_id:
+            return obj.factura_arl.numero or f"ARL #{obj.factura_arl_id}"
+        return None
+
+
+class GlosaViewSet(viewsets.ModelViewSet):
+    """Glosas de facturación: el coordinador registra y concilia."""
+
+    queryset = Glosa.objects.select_related("factura", "factura_arl").order_by("-created_at")
+    serializer_class = GlosaSerializer
+    permission_classes = [EsCoordinador]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        estado = self.request.query_params.get("estado")
+        return qs.filter(estado=estado) if estado else qs
+
+    def perform_create(self, serializer):
+        serializer.save(creada_por=self.request.user)

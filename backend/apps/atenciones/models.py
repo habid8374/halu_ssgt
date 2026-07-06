@@ -427,6 +427,43 @@ class PruebaRequerida(models.Model):
         return f"{self.profesiograma} · {self.get_tipo_prueba_display()}"
 
 
+class EstadoAutorizacion(models.TextChoices):
+    ACTIVA = "activa", "Activa"
+    USADA = "usada", "Usada"
+    VENCIDA = "vencida", "Vencida"
+    ANULADA = "anulada", "Anulada"
+
+
+class AutorizacionServicio(models.Model):
+    """
+    Autorización digital que la empresa cliente emite para pre-aprobar la
+    atención de un trabajador (evita atender a quien la empresa no autorizó).
+    Recepción la valida en la admisión.
+    """
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="autorizaciones")
+    trabajador_documento = models.CharField(max_length=30, db_index=True)
+    trabajador_nombre = models.CharField(max_length=200, blank=True, default="")
+    tipo_examen = models.CharField(max_length=20, choices=TipoExamen.choices, blank=True, default="")
+    cargo = models.CharField(max_length=150, blank=True, default="")
+    numero = models.CharField(max_length=40, blank=True, default="", help_text="N.º de autorización de la empresa.")
+    vigencia_hasta = models.DateField(null=True, blank=True)
+    estado = models.CharField(max_length=10, choices=EstadoAutorizacion.choices, default=EstadoAutorizacion.ACTIVA)
+    creada_por = models.ForeignKey("usuarios.Usuario", on_delete=models.PROTECT, related_name="autorizaciones_creadas")
+    atencion = models.ForeignKey(
+        "Atencion", on_delete=models.SET_NULL, null=True, blank=True, related_name="autorizaciones_usadas"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Autorización de servicio"
+        verbose_name_plural = "Autorizaciones de servicio"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Autorización {self.numero or self.pk} — {self.trabajador_documento} [{self.estado}]"
+
+
 class EstadoPrueba(models.TextChoices):
     PENDIENTE = "pendiente", "Pendiente"
     EN_PROCESO = "en_proceso", "En proceso"

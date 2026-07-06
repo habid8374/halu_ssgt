@@ -26,8 +26,10 @@ from .models import (
     Trabajador,
     TransicionInvalidaError,
 )
+from .models import AutorizacionServicio
 from .serializers import (
     AtencionSerializer,
+    AutorizacionServicioSerializer,
     CitaSerializer,
     ConfiguracionIPSSerializer,
     ConsultorioSerializer,
@@ -444,3 +446,77 @@ class PruebaAtencionViewSet(viewsets.ModelViewSet):
         if datos.get("estado") == "realizada" and not serializer.instance.realizada_at:
             extra = {"realizada_por": self.request.user, "realizada_at": timezone.now()}
         serializer.save(**extra)
+
+    @action(detail=False, methods=["post"])
+    def importar(self, request):
+        """
+        Ingesta de paraclínicos desde archivo plano/JSON del laboratorio o
+        equipo. Body: [{documento, tipo_prueba, resumen, resultado?}]. Empareja
+        con la prueba pendiente del trabajador y la marca realizada.
+        """
+        from django.utils import timezone
+
+        filas = request.data if isinstance(request.data, list) else request.data.get("resultados", [])
+        if not isinstance(filas, list) or not filas:
+            return Response({"detail": "Envía una lista de resultados."}, status=status.HTTP_400_BAD_REQUEST)
+        base = PruebaAtencion.objects.filter(estado__in=["pendiente", "en_proceso"])
+        if request.user.rol == Rol.RECEPCION:
+            base = base.filter(atencion__sede=request.user.sede)
+        elif request.user.rol == Rol.MEDICO:
+            base = base.filter(atencion__profesional_asignado=request.user)
+        aplicados = 0
+        for f in filas:
+            doc = str(f.get("documento", "")).strip()
+            tipo = str(f.get("tipo_prueba", "")).strip()
+            if not doc or not tipo:
+                continue
+            prueba = base.filter(atencion__trabajador__numero_documento=doc, tipo_prueba=tipo).order_by("created_at").first()
+            if prueba is None:
+                continue
+            prueba.resumen = str(f.get("resumen", ""))[:255] or prueba.resumen
+            if isinstance(f.get("resultado"), dict):
+                prueba.resultado = f["resultado"]
+            prueba.estado = "realizada"
+            prueba.realizada_por = request.user
+            prueba.realizada_at = timezone.now()
+            prueba.save()
+            aplicados += 1
+        return Response({"aplicados": aplicados, "recibidos": len(filas)})
+
+
+class PermisoAutorizaciones(BasePermission):
+    """Empresa cliente crea/gestiona sus autorizaciones; recepción/coordinador leen."""
+
+    LECTORES = {Rol.RECEPCION, Rol.COORDINADOR, Rol.EMPRESA_CLIENTE}
+
+    def has_permission(self, request, view):
+        u = request.user
+        if not (u and u.is_authenticated and u.rol):
+            return False
+        if request.method in SAFE_METHODS:
+            return u.rol in self.LECTORES
+        return u.rol == Rol.EMPRESA_CLIENTE
+
+
+class AutorizacionServicioViewSet(viewsets.ModelViewSet):
+    """
+    Autorizaciones digitales. La empresa cliente las crea para sus trabajadores;
+    recepción las consulta en la admisión (?documento=). Sin DELETE (se anula).
+    """
+
+    serializer_class = AutorizacionServicioSerializer
+    permission_classes = [PermisoAutorizaciones]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_queryset(self):
+        u = self.request.user
+        qs = AutorizacionServicio.objects.select_related("empresa").order_by("-created_at")
+        if u.rol == Rol.EMPRESA_CLIENTE:
+            qs = qs.filter(empresa=u.empresa)
+        doc = self.request.query_params.get("documento")
+        if doc:
+            qs = qs.filter(trabajador_documento=doc, estado="activa")
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(empresa=self.request.user.empresa, creada_por=self.request.user)

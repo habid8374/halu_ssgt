@@ -145,3 +145,37 @@ class FacturaARL(models.Model):
                     "La atención no corresponde al trabajador del accidente: "
                     "solo se factura a la ARL la atención derivada del evento."
                 )
+
+
+class EstadoGlosa(models.TextChoices):
+    PENDIENTE = "pendiente", "Pendiente"
+    ACEPTADA = "aceptada", "Aceptada (IPS acepta)"
+    RECHAZADA = "rechazada", "Rechazada (IPS ratifica)"
+    SUBSANADA = "subsanada", "Subsanada"
+    CONCILIADA = "conciliada", "Conciliada / cerrada"
+
+
+class Glosa(models.Model):
+    """
+    Glosa: discrepancia u objeción de una factura por parte de la empresa/ARL.
+    La IPS la concilia respondiendo (aceptar, ratificar, subsanar).
+    """
+
+    factura = models.ForeignKey(Factura, on_delete=models.PROTECT, related_name="glosas", null=True, blank=True)
+    factura_arl = models.ForeignKey(FacturaARL, on_delete=models.PROTECT, related_name="glosas", null=True, blank=True)
+    codigo = models.CharField(max_length=20, blank=True, default="", help_text="Código de glosa (Res. 3047/2008).")
+    descripcion = models.CharField(max_length=255)
+    valor = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    estado = models.CharField(max_length=12, choices=EstadoGlosa.choices, default=EstadoGlosa.PENDIENTE)
+    respuesta = models.TextField(blank=True, default="")
+    creada_por = models.ForeignKey("usuarios.Usuario", on_delete=models.PROTECT, related_name="glosas_creadas")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Glosa"
+        verbose_name_plural = "Glosas"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Glosa {self.codigo or self.pk} — ${self.valor} [{self.estado}]"
