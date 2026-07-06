@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import Combobox, { type ItemCatalogo } from "@/components/Combobox";
+import SelectUbicacion from "@/components/SelectUbicacion";
 import { apiFetch, TIPO_EXAMEN_LABEL, type Yo } from "@/lib/api";
 
 interface Empresa { id: number; nombre: string }
@@ -69,6 +71,7 @@ export default function AdmisionPage() {
   const [f, setF] = useState<Record<string, string>>({ ...VACIO });
   const [existente, setExistente] = useState<Trabajador | null>(null);
   const [buscado, setBuscado] = useState(false);
+  const [ciuo, setCiuo] = useState<ItemCatalogo[]>([]);
 
   const [tipoExamen, setTipoExamen] = useState("pre_ingreso");
   const [medicoId, setMedicoId] = useState("");
@@ -91,6 +94,9 @@ export default function AdmisionPage() {
       if (ms.length === 1) setMedicoId(String(ms[0].id));
     });
     void apiFetch<Consultorio[]>(`/consultorios/?sede=${yo.sede ?? 1}`).then(setConsultorios);
+    void fetch("/ciuo.json")
+      .then((r) => r.json())
+      .then((d: { ocupaciones: ItemCatalogo[] }) => setCiuo(d.ocupaciones));
   }, []);
 
   async function buscar() {
@@ -210,12 +216,17 @@ export default function AdmisionPage() {
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">Residencia y contacto</h2>
             <div className="grid grid-cols-2 gap-3">
-              <label className={labelCls}>Departamento
-                <input value={f.departamento_residencia} onChange={(e) => set("departamento_residencia", e.target.value)} className={inputCls} disabled={bloqueado} /></label>
-              <label className={labelCls}>Municipio
-                <input value={f.municipio_residencia} onChange={(e) => set("municipio_residencia", e.target.value)} className={inputCls} disabled={bloqueado} /></label>
-              <label className={labelCls}>Código DANE municipio
-                <input value={f.municipio_dane} onChange={(e) => set("municipio_dane", e.target.value)} className={inputCls} placeholder="11001" disabled={bloqueado} /></label>
+              <SelectUbicacion
+                departamento={f.departamento_residencia}
+                municipioDane={f.municipio_dane}
+                disabled={bloqueado}
+                onChange={(v) => setF((p) => ({
+                  ...p,
+                  departamento_residencia: v.departamento,
+                  municipio_residencia: v.municipio,
+                  municipio_dane: v.municipio_dane,
+                }))}
+              />
               <label className={labelCls}>Zona
                 <Sel k="zona_territorial"><option value="">Seleccionar…</option>{ZONAS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Sel></label>
               <label className={`${labelCls} col-span-2`}>Dirección
@@ -236,7 +247,15 @@ export default function AdmisionPage() {
               <label className={labelCls}>Cargo
                 <input value={f.cargo} onChange={(e) => set("cargo", e.target.value)} className={inputCls} disabled={bloqueado} /></label>
               <label className={labelCls}>Ocupación (CIUO)
-                <input value={f.ocupacion_ciuo} onChange={(e) => set("ocupacion_ciuo", e.target.value)} className={inputCls} disabled={bloqueado} /></label>
+                <div className="mt-1">
+                  <Combobox
+                    items={ciuo}
+                    value={f.ocupacion_ciuo}
+                    disabled={bloqueado}
+                    placeholder="Buscar ocupación…"
+                    onSelect={(o) => set("ocupacion_ciuo", o?.codigo ?? "")}
+                  />
+                </div></label>
             </div>
           </section>
 

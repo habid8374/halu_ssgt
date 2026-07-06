@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import SelectUbicacion from "@/components/SelectUbicacion";
 import { apiFetch, TIPO_EXAMEN_LABEL } from "@/lib/api";
 
 interface Empresa {
@@ -150,12 +151,16 @@ export default function EmpresasPage() {
             <input value={nueva.arl_nombre} onChange={(e) => setN("arl_nombre", e.target.value)} className={inputCls} placeholder="Positiva, Sura…" />
           </label>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className={labelCls}>Departamento
-              <input value={nueva.departamento} onChange={(e) => setN("departamento", e.target.value)} className={inputCls} />
-            </label>
-            <label className={labelCls}>Municipio
-              <input value={nueva.municipio} onChange={(e) => setN("municipio", e.target.value)} className={inputCls} />
-            </label>
+            <SelectUbicacion
+              departamento={nueva.departamento}
+              municipioDane={nueva.municipio_dane}
+              onChange={(v) => setNueva((p) => ({
+                ...p,
+                departamento: v.departamento,
+                municipio: v.municipio,
+                municipio_dane: v.municipio_dane,
+              }))}
+            />
           </div>
           <label className={`${labelCls} mt-3`}>Dirección
             <input value={nueva.direccion} onChange={(e) => setN("direccion", e.target.value)} className={inputCls} />
