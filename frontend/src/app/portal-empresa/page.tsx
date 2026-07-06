@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
-import { imprimirConcepto } from "@/lib/conceptoPdf";
+import { imprimirConcepto, imprimirConceptosLote } from "@/lib/conceptoPdf";
 
 interface Concepto {
   id: number;
@@ -41,10 +42,22 @@ export default function PortalEmpresaPage() {
 
   return (
     <AppShell titulo="Portal empresa — Conceptos de aptitud">
-      <p className="mb-4 text-xs text-gray-500">
-        Por normativa (Res. 1843/2025), este portal solo muestra el concepto de aptitud
-        ocupacional. La historia clínica es reservada y no es accesible para el empleador.
-      </p>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="flex-1 text-xs text-gray-500">
+          Por normativa (Res. 1843/2025), este portal solo muestra el concepto de aptitud
+          ocupacional. La historia clínica es reservada y no es accesible para el empleador.
+        </p>
+        <Link href="/portal-empresa/epidemiologia"
+          className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200">
+          📊 Condiciones de salud
+        </Link>
+        {conceptos && conceptos.length > 0 && (
+          <button onClick={() => imprimirConceptosLote(conceptos)}
+            className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-700">
+            ⬇ Descargar todos (PDF)
+          </button>
+        )}
+      </div>
       {conceptos === null ? (
         <p className="text-sm text-gray-500">Cargando…</p>
       ) : conceptos.length === 0 ? (

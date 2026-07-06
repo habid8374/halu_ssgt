@@ -201,6 +201,38 @@ class AtencionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         return CrearAtencionSerializer if self.action == "create" else AtencionSerializer
 
+    @action(detail=True, methods=["get"])
+    def sugerir_concepto(self, request, pk=None):
+        """
+        Sugiere el concepto de aptitud compilando los diagnósticos y los
+        resúmenes de las pruebas del circuito. La decisión final es del médico.
+        """
+        if request.user.rol != Rol.MEDICO:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        atencion = self.get_object()
+        from apps.historia_clinica.models import Diagnostico
+
+        diags = list(
+            Diagnostico.objects.filter(historia__atencion=atencion).values_list("cie10_codigo", "cie10_desc")
+        )
+        pruebas = list(atencion.pruebas.all())
+        resumenes = [f"{p.get_tipo_prueba_display()}: {p.resumen}" for p in pruebas if p.resumen]
+
+        # Heurística: si hay diagnósticos o hallazgos, sugerir "con restricciones".
+        hay_hallazgo = bool(diags) or any(
+            kw in (p.resumen or "").lower()
+            for p in pruebas for kw in ("hipoacusia", "alterad", "obstructiv", "restrictiv", "mixto")
+        )
+        aptitud = "apto_restricciones" if hay_hallazgo else "apto"
+        restricciones = "; ".join(desc for _, desc in diags)
+        recomendaciones = " | ".join(resumenes)
+        return Response({
+            "aptitud": aptitud,
+            "restricciones": restricciones,
+            "recomendaciones_laborales": recomendaciones,
+            "diagnosticos": [{"codigo": c, "descripcion": d} for c, d in diags],
+        })
+
     def get_queryset(self):
         qs = scope_atenciones(self.request.user, super().get_queryset())
         sede_id = self.request.query_params.get("sede")

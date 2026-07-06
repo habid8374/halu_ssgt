@@ -73,3 +73,23 @@ export async function imprimirConcepto(c: ConceptoImprimible) {
 
   imprimirDocumento("Certificado de aptitud médico ocupacional", enc, cuerpo);
 }
+
+/** Impresión MASIVA: un documento con todos los certificados (uno por página). */
+export async function imprimirConceptosLote(conceptos: ConceptoImprimible[]) {
+  if (!conceptos.length) return;
+  const enc: EncabezadoImpresion = {
+    ips: typeof window !== "undefined" ? window.location.hostname : "IPS",
+    paciente: `${conceptos.length} certificados`,
+    membrete: await cargarMembrete(),
+  };
+  const bloques = conceptos.map((c) => {
+    const color = COLOR[c.aptitud] ?? "#111";
+    return `<div style="page-break-inside:avoid;border:1px solid #ddd;border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:700">${esc(c.trabajador_nombre)}${c.trabajador_documento ? ` · ${esc(c.trabajador_documento)}` : ""}</div>
+      <div style="font-size:13px">Concepto: <b style="color:${color}">${esc(APTITUD[c.aptitud] ?? c.aptitud)}</b>${c.fecha_emision ? ` · ${esc(c.fecha_emision)}` : ""}</div>
+      ${c.restricciones ? `<div style="font-size:12px;color:#444">Restricciones: ${esc(c.restricciones)}</div>` : ""}
+      ${c.recomendaciones_laborales ? `<div style="font-size:12px;color:#444">Recomendaciones: ${esc(c.recomendaciones_laborales)}</div>` : ""}
+    </div>`;
+  }).join("");
+  imprimirDocumento("Certificados de aptitud (consolidado)", enc, `<h2>Certificados de aptitud</h2>${bloques}`);
+}

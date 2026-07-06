@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from .epidemiologia import EpidemiologiaView
 from .psicosocial import ConsolidadoView, InstrumentoViewSet
 
 router = DefaultRouter()
@@ -16,4 +17,5 @@ router.register("psicosocial/instrumentos", InstrumentoViewSet, basename="instru
 
 urlpatterns = router.urls + [
     path("psicosocial/consolidado/", ConsolidadoView.as_view(), name="psicosocial-consolidado"),
+    path("epidemiologia/", EpidemiologiaView.as_view(), name="epidemiologia"),
 ]

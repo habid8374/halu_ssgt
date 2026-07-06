@@ -49,13 +49,14 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
     { href: "/gerencia/alertas", label: "Alertas de plazos", icono: "⏰" },
     { href: "/gerencia/accidentes", label: "Accidentes (FURAT/FUREL)", icono: "🚨" },
     { href: "/gerencia/facturacion", label: "Facturación", icono: "🧾" },
-    { href: "#reportes", label: "Reportes", icono: "📊", deshabilitado: true },
+    { href: "/gerencia/epidemiologia", label: "Epidemiología", icono: "📊" },
   ],
   psicologo_sst: [
     { href: "/psicosocial", label: "Batería psicosocial", icono: "🧠" },
   ],
   empresa_cliente: [
     { href: "/portal-empresa", label: "Conceptos de aptitud", icono: "📄" },
+    { href: "/portal-empresa/epidemiologia", label: "Condiciones de salud", icono: "📊" },
     { href: "/portal-empresa/facturas", label: "Mis facturas", icono: "🧾" },
   ],
 };

@@ -347,6 +347,30 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
             </button>
           )}
 
+          {!concepto.firmado && (
+            <button
+              onClick={async () => {
+                try {
+                  const s = await apiFetch<{ aptitud: string; restricciones: string; recomendaciones_laborales: string }>(
+                    `/atenciones/${atencionId}/sugerir_concepto/`,
+                  );
+                  setConcepto((c) => ({
+                    ...c,
+                    aptitud: s.aptitud,
+                    restricciones: s.restricciones || c.restricciones,
+                    recomendaciones_laborales: s.recomendaciones_laborales || c.recomendaciones_laborales,
+                  }));
+                  setMsg({ tipo: "ok", texto: "Concepto sugerido a partir de diagnósticos y pruebas. Revísalo antes de firmar." });
+                } catch (e) {
+                  setMsg({ tipo: "error", texto: (e as Error).message });
+                }
+              }}
+              className="mb-3 rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
+            >
+              ✨ Sugerir aptitud (según hallazgos)
+            </button>
+          )}
+
           <label className={labelCls}>
             Concepto de aptitud
             <select
