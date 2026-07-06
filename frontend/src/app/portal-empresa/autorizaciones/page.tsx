@@ -10,7 +10,7 @@ interface Auth {
 }
 const inputCls = "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-teal-500 focus:outline-none";
 const labelCls = "block text-xs font-medium uppercase tracking-wide text-gray-500";
-const VACIO = { trabajador_documento: "", trabajador_nombre: "", tipo_examen: "pre_ingreso", cargo: "", numero: "", vigencia_hasta: "" };
+const VACIO = { trabajador_documento: "", trabajador_nombre: "", tipo_examen: "pre_ingreso", cargo: "", vigencia_hasta: "" };
 
 /** Autorizaciones de servicio (empresa cliente): pre-aprueba a sus trabajadores. */
 export default function AutorizacionesPage() {
@@ -54,13 +54,10 @@ export default function AutorizacionesPage() {
             <label className={labelCls}>Cargo
               <input value={f.cargo} onChange={(e) => set("cargo", e.target.value)} className={inputCls} /></label>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className={labelCls}>N.º autorización
-              <input value={f.numero} onChange={(e) => set("numero", e.target.value)} className={inputCls} /></label>
-            <label className={labelCls}>Vigencia hasta
-              <input type="date" value={f.vigencia_hasta} onChange={(e) => set("vigencia_hasta", e.target.value)} className={inputCls} /></label>
-          </div>
+          <label className={`${labelCls} mt-3`}>Vigencia hasta
+            <input type="date" value={f.vigencia_hasta} onChange={(e) => set("vigencia_hasta", e.target.value)} className={inputCls} /></label>
           <button type="submit" className="mt-4 w-full rounded-lg bg-teal-600 py-2 text-sm font-semibold text-white hover:bg-teal-700">Emitir autorización</button>
+          <p className="mt-2 text-[11px] text-gray-400">El N.º de autorización se asigna automático y consecutivo (001, 002…).</p>
         </form>
         <section className="space-y-2">
           <h2 className="mb-1 text-sm font-bold uppercase tracking-wide text-gray-500">Emitidas ({lista.length})</h2>

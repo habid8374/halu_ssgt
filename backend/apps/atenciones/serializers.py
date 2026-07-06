@@ -26,7 +26,8 @@ class AutorizacionServicioSerializer(serializers.ModelSerializer):
             "id", "empresa", "empresa_nombre", "trabajador_documento", "trabajador_nombre",
             "tipo_examen", "cargo", "numero", "vigencia_hasta", "estado", "created_at",
         ]
-        read_only_fields = ["estado"]
+        # El número es automático y consecutivo (se asigna en la vista).
+        read_only_fields = ["estado", "numero"]
 
 
 class ConfiguracionIPSSerializer(serializers.ModelSerializer):

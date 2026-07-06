@@ -532,4 +532,21 @@ class AutorizacionServicioViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(empresa=self.request.user.empresa, creada_por=self.request.user)
+        from django.db import transaction
+
+        empresa = self.request.user.empresa
+        with transaction.atomic():
+            # Bloquea las autorizaciones de la empresa para serializar el
+            # consecutivo bajo concurrencia (dos altas simultáneas no chocan).
+            existentes = list(
+                AutorizacionServicio.objects.select_for_update()
+                .filter(empresa=empresa).values_list("numero", flat=True)
+            )
+            maximo = 0
+            for n in existentes:
+                try:
+                    maximo = max(maximo, int(str(n).lstrip("0") or "0"))
+                except (TypeError, ValueError):
+                    continue
+            numero = str(maximo + 1).zfill(3)
+            serializer.save(empresa=empresa, creada_por=self.request.user, numero=numero)
