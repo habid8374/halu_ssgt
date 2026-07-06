@@ -197,6 +197,17 @@ export default function Tablero({
                         </span>
                         <MinutosEn desde={a.estado_actualizado_at} />
                       </div>
+                      {a.pruebas_resumen && a.pruebas_resumen.total > 0 && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+                            <div className={`h-full ${a.pruebas_resumen.completo ? "bg-emerald-400" : "bg-teal-400"}`}
+                              style={{ width: `${Math.round((a.pruebas_resumen.realizadas / a.pruebas_resumen.total) * 100)}%` }} />
+                          </div>
+                          <span className="text-[10px] tabular-nums text-gray-500">
+                            {a.pruebas_resumen.realizadas}/{a.pruebas_resumen.total}
+                          </span>
+                        </div>
+                      )}
                       {(hrefAtencion || (!soloLectura && SIGUIENTES[a.estado].length > 0)) && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {hrefAtencion && (

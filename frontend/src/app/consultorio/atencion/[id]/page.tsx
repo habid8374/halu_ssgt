@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import DiagnosticosSection from "@/components/medico/DiagnosticosSection";
 import OrdenesSection from "@/components/medico/OrdenesSection";
 import RecetasSection from "@/components/medico/RecetasSection";
+import PruebasSection from "@/components/medico/PruebasSection";
 import type { EncabezadoImpresion, Membrete } from "@/lib/imprimir";
 import { cargarMembrete } from "@/lib/membrete";
 import { imprimirHistoriaCompleta } from "@/lib/historiaPdf";
@@ -388,8 +389,9 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
         </section>
       </div>
 
-      {/* --------- Módulo del médico: diagnósticos, órdenes y recetas --------- */}
+      {/* --------- Módulo del médico: circuito, diagnósticos, órdenes y recetas --------- */}
       <div className="mt-6 space-y-6">
+        <PruebasSection atencionId={atencionId} />
         <DiagnosticosSection atencionId={atencionId} historiaId={historia.id} />
         <div className="grid gap-6 xl:grid-cols-2">
           <OrdenesSection atencionId={atencionId} encabezado={encabezado} />

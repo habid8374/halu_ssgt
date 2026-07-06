@@ -157,6 +157,7 @@ export interface Atencion {
   profesional_nombre: string | null;
   estado_actualizado_at: string;
   created_at: string;
+  pruebas_resumen?: { total: number; realizadas: number; completo: boolean } | null;
 }
 
 export const TIPO_EXAMEN_LABEL: Record<string, string> = {
