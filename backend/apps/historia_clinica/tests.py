@@ -266,6 +266,38 @@ class CupsCatalogoTest(BasePermisosTest):
         self.assertTrue(CodigoCups.objects.filter(codigo="999998").exists())
 
 
+class CumsCatalogoTest(BasePermisosTest):
+    """Vademécum CUMS: búsqueda (roles operativos) e importación (coordinador)."""
+
+    def test_medico_busca_cums(self):
+        from .models import CodigoCums
+
+        CodigoCums.objects.create(codigo="19900001-1", nombre="ACETAMINOFEN",
+                                  forma_farmaceutica="TABLETA", via="ORAL", atc="N02BE01")
+        r = self._get(self.medico, "/api/cums/?q=acetamin")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(any(c["nombre"] == "ACETAMINOFEN" for c in r.json()))
+        self.assertTrue(all("etiqueta" in c for c in r.json()))
+
+    def test_coordinador_importa_cums(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from .models import CodigoCums
+
+        self.client.force_login(self.coordinador)
+        contenido = "20999999-9;IBUPROFENO;TABLETA;ORAL;M01AE01\n".encode()
+        archivo = SimpleUploadedFile("cums.csv", contenido, content_type="text/csv")
+        r = self.client.post("/api/cums/importar/", {"archivo": archivo})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertTrue(CodigoCums.objects.filter(codigo="20999999-9").exists())
+
+    def test_recepcion_no_importa_cums(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.force_login(self.recepcion)
+        archivo = SimpleUploadedFile("cums.csv", b"1-1;X;;;\n", content_type="text/csv")
+        self.assertEqual(self.client.post("/api/cums/importar/", {"archivo": archivo}).status_code, 403)
+
+
 class PsicosocialCustodiaTest(BasePermisosTest):
     """Regla 4 (Res. 2404/2019): custodia separada de instrumentos."""
 

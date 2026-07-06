@@ -19,6 +19,7 @@ from apps.usuarios.permissions import (
 from apps.usuarios.roles import Rol
 
 from .models import (
+    CodigoCums,
     CodigoCups,
     ConceptoMedicoOcupacional,
     Diagnostico,
@@ -27,6 +28,7 @@ from .models import (
     Receta,
 )
 from .serializers import (
+    CodigoCumsSerializer,
     CodigoCupsSerializer,
     ConceptoSerializer,
     DiagnosticoSerializer,
@@ -249,3 +251,78 @@ class CupsViewSet(viewsets.ReadOnlyModelViewSet):
             "creados": len(crear), "actualizados": len(actualizar),
             "total": CodigoCups.objects.count(),
         })
+
+
+class CumsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Vademécum CUMS buscable para recetar (genérico/DCI). Lectura para roles
+    operativos; el coordinador importa un CSV (codigo, genérico, forma, vía,
+    ATC) con la acción `importar` (upsert por código).
+    """
+
+    serializer_class = CodigoCumsSerializer
+    permission_classes = [GestionRecursosIPS]
+
+    def get_queryset(self):
+        qs = CodigoCums.objects.filter(activo=True)
+        q = (self.request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(nombre__icontains=q) | qs.filter(codigo__startswith=q) | qs.filter(atc__startswith=q.upper())
+        return qs.distinct()[:50]
+
+    @action(detail=False, methods=["post"])
+    def importar(self, request):
+        archivo = request.FILES.get("archivo")
+        if archivo is None:
+            return Response({"detail": "Adjunta el archivo CSV del CUMS."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        raw = archivo.read()
+        for enc in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                texto = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            return Response({"detail": "No se pudo leer el archivo (codificación)."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            delim = csv.Sniffer().sniff(texto[:4096], delimiters=";,\t|").delimiter
+        except csv.Error:
+            delim = ";" if texto[:4096].count(";") >= texto[:4096].count(",") else ","
+
+        filas = []
+        for cols in csv.reader(io.StringIO(texto), delimiter=delim):
+            if len(cols) < 2:
+                continue
+            codigo = cols[0].strip().strip('"')
+            nombre = cols[1].strip().strip('"')
+            if not codigo or not nombre or not any(ch.isdigit() for ch in codigo):
+                continue
+            filas.append((
+                codigo[:20], nombre[:180],
+                (cols[2].strip()[:80] if len(cols) > 2 else ""),
+                (cols[3].strip()[:40] if len(cols) > 3 else ""),
+                (cols[4].strip()[:12] if len(cols) > 4 else ""),
+            ))
+        if not filas:
+            return Response({"detail": "No se reconocieron filas de CUMS en el archivo."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        existentes = {c.codigo: c for c in CodigoCums.objects.all()}
+        crear, actualizar, vistos = [], [], set()
+        for codigo, nombre, forma, via, atc in filas:
+            if codigo in vistos:
+                continue
+            vistos.add(codigo)
+            actual = existentes.get(codigo)
+            if actual is None:
+                crear.append(CodigoCums(codigo=codigo, nombre=nombre, forma_farmaceutica=forma, via=via, atc=atc, activo=True))
+            elif (actual.nombre, actual.forma_farmaceutica, actual.via, actual.atc, actual.activo) != (nombre, forma, via, atc, True):
+                actual.nombre, actual.forma_farmaceutica, actual.via, actual.atc, actual.activo = nombre, forma, via, atc, True
+                actualizar.append(actual)
+        CodigoCums.objects.bulk_create(crear, batch_size=1000, ignore_conflicts=True)
+        if actualizar:
+            CodigoCums.objects.bulk_update(actualizar, ["nombre", "forma_farmaceutica", "via", "atc", "activo"], batch_size=1000)
+        return Response({"creados": len(crear), "actualizados": len(actualizar), "total": CodigoCums.objects.count()})

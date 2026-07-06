@@ -6,7 +6,7 @@ El modelo NO conoce Channels; este módulo es el único punto de acople.
 """
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.db import connection
+from django.db import connection, transaction
 
 
 def grupo_tablero(schema_name: str, sede_id: int) -> str:
@@ -24,8 +24,20 @@ def transicionar_atencion(atencion, nuevo_estado, usuario, nota=""):
     Valida y aplica la transición (Atencion.cambiar_estado) y luego difunde
     el evento al tablero de la sede. Devuelve el HistorialEstado creado.
     Lanza TransicionInvalidaError si la máquina de estados lo rechaza.
+
+    Concurrencia: con muchos usuarios operando a la vez, dos personas podrían
+    intentar transicionar la MISMA atención al tiempo. Se bloquea la fila
+    (SELECT ... FOR UPDATE) dentro de una transacción para serializar el
+    cambio: el segundo lee el estado ya actualizado y la máquina de estados
+    rechaza la transición inválida. Atenciones distintas no se bloquean entre
+    sí, así que el trabajo simultáneo de todo el equipo fluye normal.
     """
-    historial = atencion.cambiar_estado(nuevo_estado, usuario, nota)
+    from .models import Atencion
+
+    with transaction.atomic():
+        bloqueada = Atencion.objects.select_for_update().get(pk=atencion.pk)
+        historial = bloqueada.cambiar_estado(nuevo_estado, usuario, nota)
+        atencion = bloqueada
 
     schema = connection.schema_name  # tenant activo (django-tenants)
     layer = get_channel_layer()
@@ -58,3 +70,29 @@ def transicionar_atencion(atencion, nuevo_estado, usuario, nota=""):
             },
         )
     return historial
+
+
+def difundir_atencion_creada(atencion):
+    """
+    Difunde al tablero de la sede que ENTRÓ una atención nueva (admisión de un
+    paciente o activación de una cita de agenda), para que aparezca en tiempo
+    real en el tablero de todos —recepción, médico, coordinador— sin recargar.
+    """
+    schema = connection.schema_name
+    layer = get_channel_layer()
+    async_to_sync(layer.group_send)(
+        grupo_tablero(schema, atencion.sede_id),
+        {
+            "type": "evento.atencion",
+            "payload": {
+                "atencion_id": atencion.id,
+                "estado_anterior": None,
+                "estado_nuevo": atencion.estado,
+                "sede_id": atencion.sede_id,
+                "consultorio_id": atencion.consultorio_id,
+                "trabajador_nombre": atencion.trabajador.nombre_completo,
+                "timestamp": atencion.created_at.isoformat(),
+                "creada": True,
+            },
+        },
+    )

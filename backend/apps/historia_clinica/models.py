@@ -413,6 +413,30 @@ class CodigoCups(models.Model):
         return f"{self.codigo} — {self.nombre}"
 
 
+class CodigoCums(models.Model):
+    """
+    Vademécum CUMS (Código Único de Medicamentos, INVIMA/MinSalud). Catálogo
+    buscable para recetar por denominación genérica (DCI). Se siembra
+    deduplicado por (genérico, forma, vía) y se completa/actualiza importando
+    el archivo oficial desde la app (rol coordinador) — sin comandos.
+    """
+
+    codigo = models.CharField(max_length=20, unique=True, db_index=True, help_text="CUM")
+    nombre = models.CharField(max_length=180, db_index=True, help_text="Denominación genérica (DCI)")
+    forma_farmaceutica = models.CharField(max_length=80, blank=True, default="")
+    via = models.CharField(max_length=40, blank=True, default="")
+    atc = models.CharField(max_length=12, blank=True, default="")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Código CUMS"
+        verbose_name_plural = "Códigos CUMS"
+        ordering = ["nombre", "forma_farmaceutica"]
+
+    def __str__(self):
+        return f"{self.codigo} — {self.nombre}"
+
+
 class MedicamentoRecetado(models.Model):
     """Renglón de medicamento de una receta."""
 

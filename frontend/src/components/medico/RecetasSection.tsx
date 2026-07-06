@@ -1,8 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import AsyncCombobox from "@/components/AsyncCombobox";
+import type { ItemCatalogo } from "@/components/Combobox";
 import { imprimirDocumento, esc, type EncabezadoImpresion } from "@/lib/imprimir";
 import { apiFetch } from "@/lib/api";
+
+interface CumsItem extends ItemCatalogo { generico?: string; forma_farmaceutica?: string; via?: string }
+
+const buscarCums = (q: string) =>
+  apiFetch<Array<{ codigo: string; nombre: string; etiqueta: string; forma_farmaceutica: string; via: string }>>(
+    `/cums/?q=${encodeURIComponent(q)}`,
+  ).then((rs) => rs.map((r) => ({
+    codigo: r.codigo, nombre: r.etiqueta, generico: r.nombre,
+    forma_farmaceutica: r.forma_farmaceutica, via: r.via,
+  })));
 
 interface Medicamento {
   medicamento: string;
@@ -43,6 +55,7 @@ export default function RecetasSection({
   const [lista, setLista] = useState<Receta[]>([]);
   const [items, setItems] = useState<Medicamento[]>([]);
   const [med, setMed] = useState<Medicamento>({ ...MED_VACIO });
+  const [cumsSel, setCumsSel] = useState<ItemCatalogo | null>(null);
   const [obs, setObs] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const setM = (k: keyof Medicamento, v: string) => setMed((p) => ({ ...p, [k]: v }));
@@ -57,6 +70,7 @@ export default function RecetasSection({
     if (!med.medicamento.trim()) return;
     setItems((p) => [...p, med]);
     setMed({ ...MED_VACIO });
+    setCumsSel(null);
   }
 
   async function guardarReceta() {
@@ -129,6 +143,23 @@ export default function RecetasSection({
         )}
 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Agregar medicamento</p>
+        <label className={`${labelCls} mb-3 block`}>Buscar en vademécum (CUMS)
+          <div className="mt-1">
+            <AsyncCombobox buscar={buscarCums} seligido={cumsSel} placeholder="Genérico, CUM o ATC…"
+              onSelect={(c) => {
+                setCumsSel(c);
+                if (c) {
+                  const it = c as CumsItem;
+                  setMed((p) => ({
+                    ...p,
+                    medicamento: it.generico ?? it.nombre,
+                    forma_farmaceutica: it.forma_farmaceutica ?? p.forma_farmaceutica,
+                    via: it.via ?? p.via,
+                  }));
+                }
+              }} />
+          </div>
+        </label>
         <div className="grid gap-3 md:grid-cols-3">
           <label className={`${labelCls} md:col-span-2`}>Medicamento *
             <input value={med.medicamento} onChange={(e) => setM("medicamento", e.target.value)} className={inputCls} placeholder="Acetaminofén" />

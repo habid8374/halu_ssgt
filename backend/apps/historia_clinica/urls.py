@@ -11,6 +11,7 @@ router.register("diagnosticos", views.DiagnosticoViewSet, basename="diagnostico"
 router.register("ordenes", views.OrdenMedicaViewSet, basename="orden")
 router.register("recetas", views.RecetaViewSet, basename="receta")
 router.register("cups", views.CupsViewSet, basename="cups")
+router.register("cums", views.CumsViewSet, basename="cums")
 router.register("psicosocial/instrumentos", InstrumentoViewSet, basename="instrumento")
 
 urlpatterns = router.urls + [

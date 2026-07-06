@@ -5,6 +5,7 @@ from rest_framework import serializers
 from apps.usuarios.models import Profesional
 
 from .models import (
+    CodigoCums,
     CodigoCups,
     ConceptoMedicoOcupacional,
     Diagnostico,
@@ -19,6 +20,19 @@ class CodigoCupsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CodigoCups
         fields = ["id", "codigo", "nombre", "seccion"]
+
+
+class CodigoCumsSerializer(serializers.ModelSerializer):
+    # Etiqueta compuesta para el buscador; `nombre` queda como el genérico puro.
+    etiqueta = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CodigoCums
+        fields = ["id", "codigo", "nombre", "etiqueta", "forma_farmaceutica", "via", "atc"]
+
+    def get_etiqueta(self, obj):
+        partes = [obj.nombre, obj.forma_farmaceutica, obj.via]
+        return " · ".join(p for p in partes if p)
 
 
 class DiagnosticoSerializer(serializers.ModelSerializer):

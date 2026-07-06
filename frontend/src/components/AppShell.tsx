@@ -41,6 +41,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
     { href: "/gerencia/personal", label: "Personal (equipo)", icono: "👥" },
     { href: "/gerencia/consultorios", label: "Sedes y consultorios", icono: "🚪" },
     { href: "/gerencia/cups", label: "Catálogo CUPS", icono: "📚" },
+    { href: "/gerencia/medicamentos", label: "Vademécum (CUMS)", icono: "💊" },
     { href: "/gerencia/empresas", label: "Empresas (convenios)", icono: "🏢" },
     { href: "/gerencia/alertas", label: "Alertas de plazos", icono: "⏰" },
     { href: "/gerencia/accidentes", label: "Accidentes (FURAT/FUREL)", icono: "🚨" },

@@ -32,7 +32,7 @@ from .serializers import (
     TrabajadorSerializer,
     TransicionSerializer,
 )
-from .services import transicionar_atencion
+from .services import difundir_atencion_creada, transicionar_atencion
 
 
 class SedeViewSet(viewsets.ModelViewSet):
@@ -172,6 +172,8 @@ class AtencionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         atencion = serializer.save()
+        # Aparece en tiempo real en el tablero de toda la sede.
+        difundir_atencion_creada(atencion)
         return Response(
             AtencionSerializer(atencion).data, status=status.HTTP_201_CREATED
         )
@@ -264,6 +266,8 @@ class CitaViewSet(viewsets.ModelViewSet):
         cita.estado = "cumplida"
         cita.atencion = atencion
         cita.save(update_fields=["estado", "atencion"])
+        # El paciente activado desde agenda aparece en el tablero en tiempo real.
+        difundir_atencion_creada(atencion)
         return Response(AtencionSerializer(atencion).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
