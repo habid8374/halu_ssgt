@@ -14,13 +14,15 @@ from .models import (
 class SedeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sede
-        fields = ["id", "nombre", "codigo", "activa"]
+        fields = ["id", "nombre", "codigo", "direccion", "activa"]
 
 
 class ConsultorioSerializer(serializers.ModelSerializer):
+    sede_nombre = serializers.CharField(source="sede.nombre", read_only=True)
+
     class Meta:
         model = Consultorio
-        fields = ["id", "sede", "nombre", "activo"]
+        fields = ["id", "sede", "sede_nombre", "nombre", "activo"]
 
 
 class EmpresaSerializer(serializers.ModelSerializer):

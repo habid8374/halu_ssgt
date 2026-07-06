@@ -159,3 +159,27 @@ class EsRecepcion(BaseRolPermission):
 
     def has_permission(self, request, view):
         return super().has_permission(request, view) and request.user.rol == Rol.RECEPCION
+
+
+class EsCoordinador(BaseRolPermission):
+    """Administración de la IPS (personal, licencias): solo coordinador."""
+
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.rol == Rol.COORDINADOR
+
+
+class GestionRecursosIPS(BaseRolPermission):
+    """
+    Recursos operativos de la IPS (sedes y consultorios):
+      - Coordinador: administra (crea/edita).
+      - Recepción y médico: solo lectura (los necesitan para admisión/tablero).
+    """
+
+    LECTORES = {Rol.RECEPCION, Rol.MEDICO, Rol.COORDINADOR}
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        if request.method in SAFE_METHODS:
+            return request.user.rol in self.LECTORES
+        return request.user.rol == Rol.COORDINADOR

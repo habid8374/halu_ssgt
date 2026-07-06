@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from apps.usuarios.permissions import (
     EsRecepcion,
+    GestionRecursosIPS,
     PuedeTransicionarAtencion,
     PuedeVerTablero,
     scope_atenciones,
@@ -34,19 +35,35 @@ from .serializers import (
 from .services import transicionar_atencion
 
 
-class SedeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Sede.objects.filter(activa=True)
+class SedeViewSet(viewsets.ModelViewSet):
+    """
+    Sedes de la IPS. El coordinador las crea/edita desde la app; recepción y
+    médico solo las consultan. Sin DELETE: se desactivan (`activa`).
+    """
+
     serializer_class = SedeSerializer
-    permission_classes = [PuedeVerTablero]
-
-
-class ConsultorioViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Consultorio.objects.filter(activo=True)
-    serializer_class = ConsultorioSerializer
-    permission_classes = [PuedeVerTablero]
+    permission_classes = [GestionRecursosIPS]
+    http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = Sede.objects.order_by("nombre")
+        # El coordinador administra todas; los demás solo ven las activas.
+        if self.request.user.rol != Rol.COORDINADOR:
+            qs = qs.filter(activa=True)
+        return qs
+
+
+class ConsultorioViewSet(viewsets.ModelViewSet):
+    """Consultorios por sede. Coordinador administra; operativos consultan."""
+
+    serializer_class = ConsultorioSerializer
+    permission_classes = [GestionRecursosIPS]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_queryset(self):
+        qs = Consultorio.objects.select_related("sede").order_by("sede__nombre", "nombre")
+        if self.request.user.rol != Rol.COORDINADOR:
+            qs = qs.filter(activo=True)
         sede_id = self.request.query_params.get("sede")
         return qs.filter(sede_id=sede_id) if sede_id else qs
 

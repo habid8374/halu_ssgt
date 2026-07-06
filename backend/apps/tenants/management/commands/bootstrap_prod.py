@@ -85,3 +85,28 @@ class Command(BaseCommand):
 
             Sede.objects.get_or_create(nombre=sede_nombre)
         self.stdout.write(self.style.SUCCESS(f"Sede inicial: {sede_nombre}."))
+
+        # 5. Coordinador inicial (OPCIONAL): login operativo listo desde el
+        #    arranque, para no depender del /admin al crear el primer personal.
+        #    Si no se definen las variables, se omite (el admin lo crea luego).
+        coord_email = os.environ.get("BOOTSTRAP_COORD_EMAIL")
+        coord_pass = os.environ.get("BOOTSTRAP_COORD_PASSWORD")
+        if coord_email and coord_pass:
+            from apps.usuarios.roles import Rol
+
+            coord_nombre = os.environ.get("BOOTSTRAP_COORD_NOMBRE", "Coordinación IPS")
+            with schema_context(schema):
+                from apps.usuarios.models import Usuario
+
+                _, creado_coord = Usuario.objects.get_or_create(
+                    email=coord_email,
+                    defaults={"nombre_completo": coord_nombre, "rol": Rol.COORDINADOR},
+                )
+                if creado_coord:
+                    u = Usuario.objects.get(email=coord_email)
+                    u.set_password(coord_pass)
+                    u.save(update_fields=["password"])
+            self.stdout.write(self.style.SUCCESS(
+                f"Coordinador {coord_email} "
+                f"{'creado' if creado_coord else 'ya existía'} (rol coordinador)."
+            ))
