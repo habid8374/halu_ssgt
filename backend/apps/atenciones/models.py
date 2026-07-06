@@ -397,6 +397,81 @@ class TipoExamenRequerido(models.Model):
         return f"{self.profesiograma} · {self.tipo_examen} c/{self.periodicidad_meses}m"
 
 
+# ---------------------------------------------------------------------------
+# Batería de pruebas (estaciones del circuito ocupacional)
+# ---------------------------------------------------------------------------
+class TipoPrueba(models.TextChoices):
+    """Estaciones/pruebas del circuito de una IPS ocupacional."""
+
+    MEDICINA = "medicina", "Evaluación médica ocupacional"
+    VISIOMETRIA = "visiometria", "Visiometría / Optometría"
+    AUDIOMETRIA = "audiometria", "Audiometría"
+    ESPIROMETRIA = "espirometria", "Espirometría"
+    LABORATORIO = "laboratorio", "Laboratorio clínico"
+    PSICOLOGIA = "psicologia", "Evaluación psicológica"
+    OTRO = "otro", "Otro paraclínico"
+
+
+class PruebaRequerida(models.Model):
+    """Prueba de la batería exigida por un profesiograma (empresa/cargo)."""
+
+    profesiograma = models.ForeignKey(Profesiograma, on_delete=models.CASCADE, related_name="pruebas")
+    tipo_prueba = models.CharField(max_length=15, choices=TipoPrueba.choices)
+    detalle = models.CharField(max_length=150, blank=True, default="", help_text="Ej. Cuadro hemático, glicemia.")
+
+    class Meta:
+        verbose_name = "Prueba requerida"
+        verbose_name_plural = "Pruebas requeridas"
+
+    def __str__(self):
+        return f"{self.profesiograma} · {self.get_tipo_prueba_display()}"
+
+
+class EstadoPrueba(models.TextChoices):
+    PENDIENTE = "pendiente", "Pendiente"
+    EN_PROCESO = "en_proceso", "En proceso"
+    REALIZADA = "realizada", "Realizada"
+    NO_APLICA = "no_aplica", "No aplica"
+
+
+class PruebaAtencion(models.Model):
+    """
+    Estación/prueba concreta dentro de una atención (el "circuito"). El
+    trabajador pasa por cada prueba pendiente (triaje multi-estación); el
+    resultado se puede DIGITAR (resultado estructurado) o ADJUNTAR (archivo),
+    o ambos. El concepto de aptitud se habilita cuando el circuito cierra.
+    """
+
+    atencion = models.ForeignKey(Atencion, on_delete=models.CASCADE, related_name="pruebas")
+    tipo_prueba = models.CharField(max_length=15, choices=TipoPrueba.choices)
+    detalle = models.CharField(max_length=150, blank=True, default="")
+    estado = models.CharField(max_length=12, choices=EstadoPrueba.choices, default=EstadoPrueba.PENDIENTE, db_index=True)
+
+    # Resultado digitado (estructurado, según el tipo de prueba) y su resumen
+    # para el concepto. El adjunto es el soporte escaneado del equipo/lab.
+    resultado = models.JSONField(default=dict, blank=True)
+    resumen = models.CharField(max_length=255, blank=True, default="")
+    archivo = models.FileField(upload_to="pruebas/%Y/%m/", null=True, blank=True)
+
+    realizada_por = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="pruebas_realizadas"
+    )
+    realizada_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Prueba de atención"
+        verbose_name_plural = "Pruebas de atención"
+        ordering = ["created_at"]
+
+    @property
+    def medico_asignado_id(self):
+        return self.atencion.profesional_asignado_id
+
+    def __str__(self):
+        return f"{self.get_tipo_prueba_display()} — atención #{self.atencion_id} [{self.estado}]"
+
+
 class EstadoCita(models.TextChoices):
     PROGRAMADA = "programada", "Programada"
     CONFIRMADA = "confirmada", "Confirmada"

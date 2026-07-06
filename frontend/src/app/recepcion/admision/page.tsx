@@ -41,6 +41,11 @@ const AFILIACIONES = [
   ["", "No informa"], ["contributivo", "Contributivo"], ["subsidiado", "Subsidiado"],
   ["especial", "Régimen especial"], ["particular", "Particular"],
 ] as const;
+const PRUEBAS = [
+  ["medicina", "Evaluación médica"], ["visiometria", "Visiometría"],
+  ["audiometria", "Audiometría"], ["espirometria", "Espirometría"],
+  ["laboratorio", "Laboratorio"], ["psicologia", "Psicología"], ["otro", "Otro paraclínico"],
+] as const;
 
 const inputCls =
   "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none disabled:bg-gray-100";
@@ -76,12 +81,34 @@ export default function AdmisionPage() {
   const [tipoExamen, setTipoExamen] = useState("pre_ingreso");
   const [medicoId, setMedicoId] = useState("");
   const [consultorioId, setConsultorioId] = useState("");
+  const [bateria, setBateria] = useState<string[]>(["medicina"]);
+  const [profesiogramaHallado, setProfesiogramaHallado] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const toggleprueba = (t: string) =>
+    setBateria((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
   const bloqueado = !!existente; // datos personales no editables si ya existe
+
+  // Auto-carga de la batería según profesiograma (empresa + cargo).
+  useEffect(() => {
+    if (!f.empresa) return;
+    const cargo = f.cargo.trim();
+    const t = setTimeout(() => {
+      void apiFetch<{ encontrado: boolean; pruebas: { tipo_prueba: string }[] }>(
+        `/profesiogramas/resolver/?empresa=${f.empresa}&cargo=${encodeURIComponent(cargo)}`,
+      ).then((r) => {
+        setProfesiogramaHallado(r.encontrado);
+        if (r.encontrado) {
+          const tipos = Array.from(new Set(["medicina", ...r.pruebas.map((p) => p.tipo_prueba)]));
+          setBateria(tipos);
+        }
+      }).catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [f.empresa, f.cargo]);
 
   useEffect(() => {
     const raw = localStorage.getItem("halu_yo");
@@ -141,6 +168,7 @@ export default function AdmisionPage() {
           trabajador: id, sede, tipo_examen: tipoExamen,
           profesional_asignado: medicoId ? Number(medicoId) : null,
           consultorio: consultorioId ? Number(consultorioId) : null,
+          pruebas: bateria,
         }),
       });
       router.push("/recepcion");
@@ -277,6 +305,28 @@ export default function AdmisionPage() {
                   <option value="">Sin asignar</option>
                   {consultorios.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select></label>
+            </div>
+
+            {/* Batería de pruebas (circuito). Se autocarga del profesiograma. */}
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Circuito de pruebas
+                {profesiogramaHallado
+                  ? <span className="ml-2 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">Profesiograma cargado</span>
+                  : <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">Sin profesiograma — selección manual</span>}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {PRUEBAS.map(([v, l]) => (
+                  <button type="button" key={v} onClick={() => toggleprueba(v)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                      bateria.includes(v)
+                        ? "bg-teal-600 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}>
+                    {bateria.includes(v) ? "✓ " : ""}{l}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
         </div>

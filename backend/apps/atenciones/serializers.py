@@ -7,7 +7,11 @@ from .models import (
     Consultorio,
     Empresa,
     HistorialEstado,
+    Profesiograma,
+    PruebaAtencion,
+    PruebaRequerida,
     Sede,
+    TipoExamenRequerido,
     Trabajador,
 )
 
@@ -84,6 +88,77 @@ class TrabajadorSerializer(serializers.ModelSerializer):
         ]
 
 
+class PruebaRequeridaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PruebaRequerida
+        fields = ["id", "tipo_prueba", "detalle"]
+
+
+class TipoExamenRequeridoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoExamenRequerido
+        fields = ["id", "tipo_examen", "periodicidad_meses", "observaciones"]
+
+
+class ProfesiogramaSerializer(serializers.ModelSerializer):
+    """Profesiograma con su batería de pruebas y exámenes (anidados)."""
+
+    pruebas = PruebaRequeridaSerializer(many=True, required=False)
+    examenes = TipoExamenRequeridoSerializer(many=True, required=False)
+    empresa_nombre = serializers.CharField(source="empresa.nombre", read_only=True)
+
+    class Meta:
+        model = Profesiograma
+        fields = ["id", "empresa", "empresa_nombre", "cargo", "activo", "pruebas", "examenes"]
+
+    def _guardar_hijos(self, prof, pruebas, examenes):
+        if pruebas is not None:
+            prof.pruebas.all().delete()
+            PruebaRequerida.objects.bulk_create(
+                [PruebaRequerida(profesiograma=prof, **p) for p in pruebas]
+            )
+        if examenes is not None:
+            prof.examenes.all().delete()
+            TipoExamenRequerido.objects.bulk_create(
+                [TipoExamenRequerido(profesiograma=prof, **e) for e in examenes]
+            )
+
+    def create(self, validated_data):
+        pruebas = validated_data.pop("pruebas", None)
+        examenes = validated_data.pop("examenes", None)
+        prof = Profesiograma.objects.create(**validated_data)
+        self._guardar_hijos(prof, pruebas, examenes)
+        return prof
+
+    def update(self, instance, validated_data):
+        pruebas = validated_data.pop("pruebas", None)
+        examenes = validated_data.pop("examenes", None)
+        for k, v in validated_data.items():
+            setattr(instance, k, v)
+        instance.save()
+        self._guardar_hijos(instance, pruebas, examenes)
+        return instance
+
+
+class PruebaAtencionSerializer(serializers.ModelSerializer):
+    """Estación/prueba del circuito. Incluye resultado digitado y/o adjunto."""
+
+    archivo_url = serializers.SerializerMethodField()
+    tipo_prueba_label = serializers.CharField(source="get_tipo_prueba_display", read_only=True)
+
+    class Meta:
+        model = PruebaAtencion
+        fields = [
+            "id", "atencion", "tipo_prueba", "tipo_prueba_label", "detalle",
+            "estado", "resultado", "resumen", "archivo", "archivo_url",
+            "realizada_por", "realizada_at", "created_at",
+        ]
+        read_only_fields = ["realizada_por", "realizada_at", "archivo_url"]
+
+    def get_archivo_url(self, obj):
+        return obj.archivo.url if obj.archivo else None
+
+
 class AtencionSerializer(serializers.ModelSerializer):
     """Tarjeta del tablero. Sin datos clínicos: solo identificación y flujo."""
 
@@ -95,13 +170,15 @@ class AtencionSerializer(serializers.ModelSerializer):
         source="profesional_asignado.nombre_completo", read_only=True, default=None
     )
 
+    pruebas_resumen = serializers.SerializerMethodField()
+
     class Meta:
         model = Atencion
         fields = [
             "id", "trabajador", "trabajador_nombre", "trabajador_documento",
             "empresa", "empresa_nombre",
             "sede", "consultorio", "consultorio_nombre", "tipo_examen", "estado",
-            "profesional_asignado", "profesional_nombre",
+            "profesional_asignado", "profesional_nombre", "pruebas_resumen",
             "created_at", "estado_actualizado_at",
         ]
         read_only_fields = ["estado", "estado_actualizado_at"]
@@ -109,13 +186,30 @@ class AtencionSerializer(serializers.ModelSerializer):
     def get_trabajador_nombre(self, obj):
         return obj.trabajador.nombre_completo
 
+    def get_pruebas_resumen(self, obj):
+        pruebas = obj.pruebas.all() if hasattr(obj, "pruebas") else []
+        total = len(pruebas)
+        if not total:
+            return None
+        realizadas = sum(1 for p in pruebas if p.estado in ("realizada", "no_aplica"))
+        return {"total": total, "realizadas": realizadas, "completo": realizadas == total}
+
 
 class CrearAtencionSerializer(serializers.ModelSerializer):
-    """Admisión (recepción): crea la atención en estado 'registrado'."""
+    """
+    Admisión (recepción): crea la atención en estado 'registrado' y arma el
+    CIRCUITO de pruebas a partir del profesiograma (empresa + cargo). Si no hay
+    profesiograma, deja al menos la evaluación médica.
+    """
+
+    pruebas = serializers.ListField(
+        child=serializers.CharField(), required=False, write_only=True,
+        help_text="Tipos de prueba a incluir; si se omite, se toma del profesiograma.",
+    )
 
     class Meta:
         model = Atencion
-        fields = ["trabajador", "sede", "consultorio", "tipo_examen", "profesional_asignado"]
+        fields = ["trabajador", "sede", "consultorio", "tipo_examen", "profesional_asignado", "pruebas"]
 
     def validate(self, data):
         trabajador = data["trabajador"]
@@ -123,8 +217,38 @@ class CrearAtencionSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        from .models import PruebaAtencion, Profesiograma, TipoPrueba
+
+        pruebas_pedidas = validated_data.pop("pruebas", None)
         validated_data["creado_por"] = self.context["request"].user
-        return super().create(validated_data)
+        atencion = super().create(validated_data)
+
+        tipos = list(pruebas_pedidas) if pruebas_pedidas else []
+        if not tipos:
+            prof = (
+                Profesiograma.objects.filter(
+                    empresa=atencion.empresa, cargo__iexact=(atencion.trabajador.cargo or ""), activo=True
+                ).prefetch_related("pruebas").first()
+            )
+            if prof:
+                tipos = [pr.tipo_prueba for pr in prof.pruebas.all()]
+        # Siempre incluir la evaluación médica como estación base.
+        if TipoPrueba.MEDICINA not in tipos:
+            tipos = [TipoPrueba.MEDICINA] + tipos
+        vistos = []
+        for t in tipos:
+            if t in vistos:
+                continue
+            vistos.append(t)
+            PruebaAtencion.objects.create(atencion=atencion, tipo_prueba=t)
+        return atencion
+
+
+class ProfesiogramaResolverSerializer(serializers.Serializer):
+    """Previsualización de la batería por empresa + cargo (para admisión)."""
+
+    empresa = serializers.IntegerField()
+    cargo = serializers.CharField(allow_blank=True)
 
 
 class TransicionSerializer(serializers.Serializer):

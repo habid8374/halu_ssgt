@@ -20,6 +20,8 @@ from .models import (
     ConfiguracionIPS,
     Consultorio,
     Empresa,
+    Profesiograma,
+    PruebaAtencion,
     Sede,
     Trabajador,
     TransicionInvalidaError,
@@ -32,6 +34,8 @@ from .serializers import (
     CrearAtencionSerializer,
     EmpresaSerializer,
     HistorialEstadoSerializer,
+    ProfesiogramaSerializer,
+    PruebaAtencionSerializer,
     SedeSerializer,
     TrabajadorSerializer,
     TransicionSerializer,
@@ -183,7 +187,7 @@ class AtencionViewSet(viewsets.ModelViewSet):
     queryset = (
         Atencion.objects.select_related(
             "trabajador", "empresa", "sede", "consultorio", "profesional_asignado"
-        )
+        ).prefetch_related("pruebas")
     )
     http_method_names = ["get", "post", "patch", "head", "options"]  # sin DELETE
 
@@ -334,3 +338,77 @@ class MeView(viewsets.ViewSet):
                 "es_coordinador": u.rol == Rol.COORDINADOR,
             }
         )
+
+
+# ---------------------------------------------------------------------------
+# Profesiogramas (batería por empresa/cargo) y pruebas del circuito
+# ---------------------------------------------------------------------------
+class ProfesiogramaViewSet(viewsets.ModelViewSet):
+    """
+    Profesiogramas: el coordinador define la batería de pruebas por empresa y
+    cargo; recepción los consulta en la admisión. Sin DELETE físico salvo por
+    el coordinador (se puede desactivar con `activo`).
+    """
+
+    serializer_class = ProfesiogramaSerializer
+    permission_classes = [GestionRecursosIPS]
+
+    def get_queryset(self):
+        qs = Profesiograma.objects.select_related("empresa").prefetch_related("pruebas", "examenes").order_by("empresa__nombre", "cargo")
+        empresa = self.request.query_params.get("empresa")
+        if empresa:
+            qs = qs.filter(empresa_id=empresa)
+        return qs
+
+    @action(detail=False, methods=["get"])
+    def resolver(self, request):
+        """Batería de pruebas para una empresa + cargo (previsualización)."""
+        empresa = request.query_params.get("empresa")
+        cargo = (request.query_params.get("cargo") or "").strip()
+        prof = (
+            Profesiograma.objects.filter(empresa_id=empresa, cargo__iexact=cargo, activo=True)
+            .prefetch_related("pruebas").first()
+            if empresa else None
+        )
+        pruebas = [{"tipo_prueba": p.tipo_prueba, "detalle": p.detalle} for p in prof.pruebas.all()] if prof else []
+        return Response({"encontrado": bool(prof), "cargo": cargo, "pruebas": pruebas})
+
+
+class PuedeGestionarPruebas(BasePermission):
+    """
+    Estaciones del circuito: recepción (triaje de su sede), médico (sus
+    atenciones), psicólogo y coordinador. Empresa_cliente nunca.
+    """
+
+    ROLES = {Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR}
+
+    def has_permission(self, request, view):
+        u = request.user
+        return bool(u and u.is_authenticated and u.rol in self.ROLES)
+
+
+class PruebaAtencionViewSet(viewsets.ModelViewSet):
+    """Pruebas/estaciones de una atención: estado + resultado (digitar/adjuntar)."""
+
+    serializer_class = PruebaAtencionSerializer
+    permission_classes = [PuedeGestionarPruebas]
+
+    def get_queryset(self):
+        u = self.request.user
+        qs = PruebaAtencion.objects.select_related("atencion").order_by("created_at")
+        if u.rol == Rol.RECEPCION:
+            qs = qs.filter(atencion__sede=u.sede)
+        elif u.rol == Rol.MEDICO:
+            qs = qs.filter(atencion__profesional_asignado=u)
+        # coordinador y psicólogo: dentro del tenant (sin filtro extra aquí).
+        atencion_id = self.request.query_params.get("atencion")
+        return qs.filter(atencion_id=atencion_id) if atencion_id else qs
+
+    def perform_update(self, serializer):
+        from django.utils import timezone
+
+        datos = serializer.validated_data
+        extra = {}
+        if datos.get("estado") == "realizada" and not serializer.instance.realizada_at:
+            extra = {"realizada_por": self.request.user, "realizada_at": timezone.now()}
+        serializer.save(**extra)
