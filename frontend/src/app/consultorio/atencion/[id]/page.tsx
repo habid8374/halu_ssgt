@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import DiagnosticosSection from "@/components/medico/DiagnosticosSection";
+import OrdenesSection from "@/components/medico/OrdenesSection";
+import RecetasSection from "@/components/medico/RecetasSection";
+import type { EncabezadoImpresion } from "@/lib/imprimir";
 import { apiFetch, TIPO_EXAMEN_LABEL, type Atencion } from "@/lib/api";
 
 interface Historia {
@@ -10,13 +14,31 @@ interface Historia {
   atencion: number;
   motivo_consulta: string;
   antecedentes: string;
+  antecedentes_laborales: string;
   revision_sistemas: string;
   examen_fisico: string;
   diagnosticos: string;
   analisis: string;
   plan_manejo: string;
   recomendaciones: string;
+  peso_kg: string;
+  talla_cm: string;
+  presion_arterial: string;
+  frecuencia_cardiaca: string;
+  frecuencia_respiratoria: string;
+  temperatura: string;
+  saturacion_o2: string;
 }
+
+const VITALES: Array<[keyof Historia, string, string]> = [
+  ["peso_kg", "Peso (kg)", "70"],
+  ["talla_cm", "Talla (cm)", "170"],
+  ["presion_arterial", "T/A", "120/80"],
+  ["frecuencia_cardiaca", "FC", "72"],
+  ["frecuencia_respiratoria", "FR", "16"],
+  ["temperatura", "Temp (°C)", "36.5"],
+  ["saturacion_o2", "SatO₂ (%)", "98"],
+];
 
 interface Concepto {
   id: number;
@@ -31,10 +53,11 @@ interface Concepto {
 
 const CAMPOS_HISTORIA: Array<[keyof Historia, string]> = [
   ["motivo_consulta", "Motivo de consulta"],
-  ["antecedentes", "Antecedentes"],
+  ["antecedentes", "Antecedentes personales / familiares"],
+  ["antecedentes_laborales", "Antecedentes laborales (ocupacionales)"],
   ["revision_sistemas", "Revisión por sistemas"],
   ["examen_fisico", "Examen físico"],
-  ["diagnosticos", "Diagnósticos"],
+  ["diagnosticos", "Diagnósticos (texto libre)"],
   ["analisis", "Análisis"],
   ["plan_manejo", "Plan de manejo"],
   ["recomendaciones", "Recomendaciones"],
@@ -65,6 +88,19 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
   const [concepto, setConcepto] = useState<Partial<Concepto>>({ aptitud: "apto" });
   const [msg, setMsg] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [medicoNombre, setMedicoNombre] = useState("");
+
+  useEffect(() => {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("halu_yo") : null;
+    if (raw) setMedicoNombre((JSON.parse(raw) as { nombre_completo?: string }).nombre_completo ?? "");
+  }, []);
+
+  const encabezado: EncabezadoImpresion = {
+    ips: typeof window !== "undefined" ? window.location.hostname : "IPS",
+    paciente: atencion?.trabajador_nombre ?? "",
+    empresa: atencion?.empresa_nombre ?? undefined,
+    profesional: medicoNombre,
+  };
 
   const cargar = useCallback(async () => {
     setAtencion(await apiFetch<Atencion>(`/atenciones/${atencionId}/`));
@@ -215,6 +251,21 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
               Reservada — solo médico
             </span>
           </div>
+          {/* Signos vitales / antropometría */}
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Signos vitales</p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {VITALES.map(([campo, etiqueta, ph]) => (
+              <label key={campo} className="block text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                {etiqueta}
+                <input
+                  className={areaCls}
+                  placeholder={ph}
+                  value={(historia[campo] as string) ?? ""}
+                  onChange={(e) => setH(campo, e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
           <div className="space-y-3">
             {CAMPOS_HISTORIA.map(([campo, etiqueta]) => (
               <label key={campo} className={labelCls}>
@@ -295,6 +346,15 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
             </div>
           )}
         </section>
+      </div>
+
+      {/* --------- Módulo del médico: diagnósticos, órdenes y recetas --------- */}
+      <div className="mt-6 space-y-6">
+        <DiagnosticosSection atencionId={atencionId} historiaId={historia.id} />
+        <div className="grid gap-6 xl:grid-cols-2">
+          <OrdenesSection atencionId={atencionId} encabezado={encabezado} />
+          <RecetasSection atencionId={atencionId} encabezado={encabezado} />
+        </div>
       </div>
     </AppShell>
   );

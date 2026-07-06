@@ -177,6 +177,65 @@ class FirmaConceptoTest(BasePermisosTest):
         self.assertEqual(concepto.licencia_sst, lic)
 
 
+class ModuloMedicoTest(BasePermisosTest):
+    """Diagnósticos CIE, órdenes y recetas: reservados al médico asignado."""
+
+    def test_medico_asignado_crea_diagnostico(self):
+        self.client.force_login(self.medico)
+        r = self.client.post("/api/diagnosticos/", {
+            "historia": self.historia.pk,
+            "cie10_codigo": "Z100", "cie10_desc": "Examen de salud ocupacional",
+            "cie11_codigo": "QA00", "relacion": "principal", "tipo": "02",
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()["cie10_codigo"], "Z100")
+
+    def test_otro_medico_no_diagnostica_historia_ajena(self):
+        self.client.force_login(self.otro_medico)
+        r = self.client.post("/api/diagnosticos/", {
+            "historia": self.historia.pk,
+            "cie10_codigo": "Z100", "cie10_desc": "X",
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 400)  # validate_historia
+
+    def test_recepcion_no_crea_ordenes_ni_recetas(self):
+        self.client.force_login(self.recepcion)
+        r = self.client.post("/api/ordenes/", {
+            "atencion": self.atencion.pk, "tipo": "laboratorio", "descripcion": "Hemograma",
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_medico_crea_orden_y_solo_el_la_ve(self):
+        self.client.force_login(self.medico)
+        r = self.client.post("/api/ordenes/", {
+            "atencion": self.atencion.pk, "tipo": "imagen",
+            "descripcion": "RX de tórax", "cantidad": 1,
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 201, r.content)
+        # El médico asignado la ve; el otro médico no (scoping).
+        self.assertEqual(len(self._get(self.medico, f"/api/ordenes/?atencion={self.atencion.pk}").json()), 1)
+        self.assertEqual(len(self._get(self.otro_medico, f"/api/ordenes/?atencion={self.atencion.pk}").json()), 0)
+
+    def test_receta_con_medicamentos(self):
+        self.client.force_login(self.medico)
+        r = self.client.post("/api/recetas/", {
+            "atencion": self.atencion.pk, "observaciones": "Tomar con alimentos",
+            "medicamentos": [
+                {"medicamento": "Acetaminofén", "concentracion": "500 mg",
+                 "dosis": "1 tableta", "frecuencia": "cada 8 horas", "duracion": "5 días"},
+            ],
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(len(r.json()["medicamentos"]), 1)
+
+    def test_receta_sin_medicamentos_rechazada(self):
+        self.client.force_login(self.medico)
+        r = self.client.post("/api/recetas/", {
+            "atencion": self.atencion.pk, "medicamentos": [],
+        }, content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+
+
 class PsicosocialCustodiaTest(BasePermisosTest):
     """Regla 4 (Res. 2404/2019): custodia separada de instrumentos."""
 

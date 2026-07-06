@@ -168,6 +168,20 @@ class EsCoordinador(BaseRolPermission):
         return super().has_permission(request, view) and request.user.rol == Rol.COORDINADOR
 
 
+class EsMedicoTratante(BaseRolPermission):
+    """
+    Recursos clínicos derivados (diagnósticos, órdenes médicas, recetas):
+    SOLO el médico asignado a la atención. Los objetos exponen la propiedad
+    `medico_asignado_id` para verificarlo (defensa en profundidad, capa 2).
+    """
+
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.rol == Rol.MEDICO
+
+    def has_object_permission(self, request, view, obj):
+        return obj.medico_asignado_id == request.user.id
+
+
 class GestionRecursosIPS(BaseRolPermission):
     """
     Recursos operativos de la IPS (sedes y consultorios):

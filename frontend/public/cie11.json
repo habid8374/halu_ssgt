@@ -1,0 +1,21 @@
+{
+  "fuente": "CIE-11 MMS (OMS) — catálogo inicial de transición (Res. 1442/2024)",
+  "nota": "Conjunto verificado de los diagnósticos más frecuentes. Ampliable con la tabla oficial de equivalencias del MinSalud.",
+  "diagnosticos": [
+    { "codigo": "QA00", "nombre": "Examen general de personas sin quejas ni diagnóstico informado" },
+    { "codigo": "BA00", "nombre": "Hipertensión esencial (primaria)" },
+    { "codigo": "5A11", "nombre": "Diabetes mellitus tipo 2" },
+    { "codigo": "5A10", "nombre": "Diabetes mellitus tipo 1" },
+    { "codigo": "5A00", "nombre": "Hipotiroidismo" },
+    { "codigo": "5B81", "nombre": "Obesidad" },
+    { "codigo": "CA23", "nombre": "Asma" },
+    { "codigo": "CA22", "nombre": "Enfermedad pulmonar obstructiva crónica (EPOC)" },
+    { "codigo": "6A70", "nombre": "Trastorno depresivo de episodio único" },
+    { "codigo": "6A71", "nombre": "Trastorno depresivo recurrente" },
+    { "codigo": "6B00", "nombre": "Trastorno de ansiedad generalizada" },
+    { "codigo": "6B01", "nombre": "Trastorno de pánico" },
+    { "codigo": "8A80", "nombre": "Migraña" },
+    { "codigo": "ME84.2", "nombre": "Dolor lumbar (lumbago)" },
+    { "codigo": "FB70.0", "nombre": "Trastornos de disco intervertebral lumbar y otros con radiculopatía" }
+  ]
+}

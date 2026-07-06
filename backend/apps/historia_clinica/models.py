@@ -37,14 +37,27 @@ class HistoriaClinicaOcupacional(models.Model):
     # --- Contenido clínico reservado (cifrado) ---
     motivo_consulta = EncryptedTextField(blank=True)
     antecedentes = EncryptedTextField(blank=True)
+    # Antecedentes laborales (ocupacionales): clave en salud ocupacional.
+    antecedentes_laborales = EncryptedTextField(blank=True)
     revision_sistemas = EncryptedTextField(blank=True)
     examen_fisico = EncryptedTextField(blank=True)
-    # Diagnósticos: texto cifrado ahora; codificación CIE-10/CIE-11 estructurada
-    # se aborda en fase 4 (interoperabilidad).
+    # Diagnósticos: además del texto libre (cifrado), la codificación CIE-10/
+    # CIE-11 estructurada vive en el modelo `Diagnostico` (selección de
+    # catálogo), soporte del RIPS/RDA y del concepto.
     diagnosticos = EncryptedTextField(blank=True)
     analisis = EncryptedTextField(blank=True)
     plan_manejo = EncryptedTextField(blank=True)
     recomendaciones = EncryptedTextField(blank=True)
+
+    # --- Signos vitales / antropometría (reservados por acceso, no cifrados
+    # para permitir impresión y cálculos; solo el médico asignado los ve) ---
+    peso_kg = models.CharField(max_length=8, blank=True, default="")
+    talla_cm = models.CharField(max_length=8, blank=True, default="")
+    presion_arterial = models.CharField(max_length=12, blank=True, default="", help_text="Ej. 120/80")
+    frecuencia_cardiaca = models.CharField(max_length=6, blank=True, default="")
+    frecuencia_respiratoria = models.CharField(max_length=6, blank=True, default="")
+    temperatura = models.CharField(max_length=6, blank=True, default="")
+    saturacion_o2 = models.CharField(max_length=6, blank=True, default="")
 
     archivada = models.BooleanField(default=False)  # archivado en frío, no borrado
     created_at = models.DateTimeField(auto_now_add=True)
@@ -235,3 +248,170 @@ class DocumentoAdjunto(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.tipo}) — atención #{self.atencion_id}"
+
+
+# ---------------------------------------------------------------------------
+# Diagnósticos codificados (CIE-10 / CIE-11) — módulo del médico
+# ---------------------------------------------------------------------------
+class TipoDiagnostico(models.TextChoices):
+    """`tipoDiagnosticoPrincipal` del RIPS (Res. 2275/2023)."""
+
+    IMPRESION = "01", "Impresión diagnóstica"
+    CONFIRMADO_NUEVO = "02", "Confirmado nuevo"
+    CONFIRMADO_REPETIDO = "03", "Confirmado repetido"
+
+
+class RelacionDiagnostico(models.TextChoices):
+    PRINCIPAL = "principal", "Principal"
+    RELACIONADO = "relacionado", "Relacionado"
+
+
+class Diagnostico(models.Model):
+    """
+    Diagnóstico codificado de una historia clínica. Se elige de catálogo
+    (CIE-10, y CIE-11 durante la transición Res. 1442/2024). Sostiene el
+    RIPS/RDA y el concepto de aptitud. Reservado: solo el médico asignado.
+    """
+
+    historia = models.ForeignKey(
+        HistoriaClinicaOcupacional, on_delete=models.PROTECT, related_name="diagnosticos_cie"
+    )
+    cie10_codigo = models.CharField(max_length=6)
+    cie10_desc = models.CharField(max_length=255)
+    # CIE-11 (transición): opcional mientras se consolida la equivalencia.
+    cie11_codigo = models.CharField(max_length=12, blank=True, default="")
+    cie11_desc = models.CharField(max_length=255, blank=True, default="")
+    relacion = models.CharField(
+        max_length=12, choices=RelacionDiagnostico.choices,
+        default=RelacionDiagnostico.PRINCIPAL,
+    )
+    tipo = models.CharField(
+        max_length=2, choices=TipoDiagnostico.choices, default=TipoDiagnostico.IMPRESION
+    )
+    observacion = EncryptedTextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Diagnóstico"
+        verbose_name_plural = "Diagnósticos"
+        # "principal" < "relacionado" alfabéticamente → principal primero.
+        ordering = ["relacion", "created_at"]
+
+    @property
+    def medico_asignado_id(self):
+        return self.historia.atencion.profesional_asignado_id
+
+    def __str__(self):
+        return f"{self.cie10_codigo} ({self.relacion}) — HC #{self.historia_id}"
+
+
+# ---------------------------------------------------------------------------
+# Órdenes médicas: paraclínicos, procedimientos, remisiones, incapacidad
+# ---------------------------------------------------------------------------
+class TipoOrden(models.TextChoices):
+    LABORATORIO = "laboratorio", "Laboratorio clínico"
+    IMAGEN = "imagen", "Imagen diagnóstica"
+    PARACLINICO = "paraclinico", "Otro paraclínico"
+    PROCEDIMIENTO = "procedimiento", "Procedimiento"
+    INTERCONSULTA = "interconsulta", "Interconsulta / remisión"
+    INCAPACIDAD = "incapacidad", "Incapacidad médica"
+    OTRO = "otro", "Otra orden"
+
+
+class EstadoOrden(models.TextChoices):
+    SOLICITADA = "solicitada", "Solicitada"
+    REALIZADA = "realizada", "Realizada"
+    ANULADA = "anulada", "Anulada"
+
+
+class OrdenMedica(models.Model):
+    """
+    Orden médica emitida por el médico tratante (paraclínicos, procedimientos,
+    remisiones, incapacidad). Se imprime/entrega al trabajador. Solo el médico
+    asignado a la atención la crea y consulta.
+    """
+
+    atencion = models.ForeignKey(
+        "atenciones.Atencion", on_delete=models.PROTECT, related_name="ordenes"
+    )
+    profesional = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT, related_name="ordenes_emitidas"
+    )
+    tipo = models.CharField(max_length=15, choices=TipoOrden.choices, default=TipoOrden.LABORATORIO)
+    descripcion = models.CharField(max_length=255, help_text="Estudio, procedimiento o servicio solicitado.")
+    codigo_cups = models.CharField(max_length=12, blank=True, default="", help_text="Código CUPS (opcional).")
+    cantidad = models.PositiveSmallIntegerField(default=1)
+    diagnostico_cie10 = models.CharField(max_length=6, blank=True, default="")
+    indicaciones = models.TextField(blank=True, default="")
+    estado = models.CharField(max_length=12, choices=EstadoOrden.choices, default=EstadoOrden.SOLICITADA)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Orden médica"
+        verbose_name_plural = "Órdenes médicas"
+        ordering = ["-created_at"]
+
+    @property
+    def medico_asignado_id(self):
+        return self.atencion.profesional_asignado_id
+
+    def __str__(self):
+        return f"{self.get_tipo_display()}: {self.descripcion} — atención #{self.atencion_id}"
+
+
+# ---------------------------------------------------------------------------
+# Recetas / fórmulas médicas
+# ---------------------------------------------------------------------------
+class Receta(models.Model):
+    """
+    Fórmula médica (receta). Encabezado + medicamentos. La crea el médico
+    asignado y se imprime/entrega al trabajador.
+    """
+
+    atencion = models.ForeignKey(
+        "atenciones.Atencion", on_delete=models.PROTECT, related_name="recetas"
+    )
+    profesional = models.ForeignKey(
+        "usuarios.Usuario", on_delete=models.PROTECT, related_name="recetas_emitidas"
+    )
+    diagnostico_cie10 = models.CharField(max_length=6, blank=True, default="")
+    observaciones = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Receta"
+        verbose_name_plural = "Recetas"
+        ordering = ["-created_at"]
+
+    @property
+    def medico_asignado_id(self):
+        return self.atencion.profesional_asignado_id
+
+    def __str__(self):
+        return f"Receta #{self.pk} — atención #{self.atencion_id}"
+
+
+class MedicamentoRecetado(models.Model):
+    """Renglón de medicamento de una receta."""
+
+    receta = models.ForeignKey(Receta, on_delete=models.CASCADE, related_name="medicamentos")
+    medicamento = models.CharField(max_length=200)
+    concentracion = models.CharField(max_length=60, blank=True, default="", help_text="Ej. 500 mg")
+    forma_farmaceutica = models.CharField(max_length=60, blank=True, default="", help_text="Ej. tableta, jarabe")
+    dosis = models.CharField(max_length=120, blank=True, default="", help_text="Ej. 1 tableta")
+    via = models.CharField(max_length=40, blank=True, default="", help_text="Ej. oral")
+    frecuencia = models.CharField(max_length=60, blank=True, default="", help_text="Ej. cada 8 horas")
+    duracion = models.CharField(max_length=60, blank=True, default="", help_text="Ej. 7 días")
+    cantidad = models.CharField(max_length=40, blank=True, default="", help_text="Ej. 21 tabletas")
+    indicaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        verbose_name = "Medicamento recetado"
+        verbose_name_plural = "Medicamentos recetados"
+
+    @property
+    def medico_asignado_id(self):
+        return self.receta.atencion.profesional_asignado_id
+
+    def __str__(self):
+        return f"{self.medicamento} — receta #{self.receta_id}"

@@ -1,9 +1,33 @@
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
 from apps.usuarios.models import Profesional
 
-from .models import ConceptoMedicoOcupacional, HistoriaClinicaOcupacional
+from .models import (
+    ConceptoMedicoOcupacional,
+    Diagnostico,
+    HistoriaClinicaOcupacional,
+    MedicamentoRecetado,
+    OrdenMedica,
+    Receta,
+)
+
+
+class DiagnosticoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Diagnostico
+        fields = [
+            "id", "historia", "cie10_codigo", "cie10_desc",
+            "cie11_codigo", "cie11_desc", "relacion", "tipo",
+            "observacion", "created_at",
+        ]
+
+    def validate_historia(self, historia):
+        # El médico solo diagnostica sobre historias de sus propias atenciones.
+        if historia.atencion.profesional_asignado_id != self.context["request"].user.id:
+            raise serializers.ValidationError("La historia no corresponde a una atención asignada a usted.")
+        return historia
 
 
 class HistoriaClinicaSerializer(serializers.ModelSerializer):
@@ -12,19 +36,90 @@ class HistoriaClinicaSerializer(serializers.ModelSerializer):
     y el scoping lo garantizan antes de llegar aquí).
     """
 
+    diagnosticos_cie = DiagnosticoSerializer(many=True, read_only=True)
+
     class Meta:
         model = HistoriaClinicaOcupacional
         fields = [
             "id", "atencion", "profesional",
-            "motivo_consulta", "antecedentes", "revision_sistemas",
-            "examen_fisico", "diagnosticos", "analisis", "plan_manejo",
-            "recomendaciones", "created_at", "updated_at",
+            "motivo_consulta", "antecedentes", "antecedentes_laborales",
+            "revision_sistemas", "examen_fisico", "diagnosticos", "analisis",
+            "plan_manejo", "recomendaciones",
+            "peso_kg", "talla_cm", "presion_arterial", "frecuencia_cardiaca",
+            "frecuencia_respiratoria", "temperatura", "saturacion_o2",
+            "diagnosticos_cie", "created_at", "updated_at",
         ]
         read_only_fields = ["profesional"]
 
     def create(self, validated_data):
         validated_data["profesional"] = self.context["request"].user
         return super().create(validated_data)
+
+
+class OrdenMedicaSerializer(serializers.ModelSerializer):
+    profesional_nombre = serializers.CharField(source="profesional.nombre_completo", read_only=True)
+
+    class Meta:
+        model = OrdenMedica
+        fields = [
+            "id", "atencion", "profesional", "profesional_nombre", "tipo",
+            "descripcion", "codigo_cups", "cantidad", "diagnostico_cie10",
+            "indicaciones", "estado", "created_at",
+        ]
+        read_only_fields = ["profesional"]
+
+    def validate_atencion(self, atencion):
+        if atencion.profesional_asignado_id != self.context["request"].user.id:
+            raise serializers.ValidationError("La atención no está asignada a usted.")
+        return atencion
+
+    def create(self, validated_data):
+        validated_data["profesional"] = self.context["request"].user
+        return super().create(validated_data)
+
+
+class MedicamentoRecetadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MedicamentoRecetado
+        fields = [
+            "id", "medicamento", "concentracion", "forma_farmaceutica",
+            "dosis", "via", "frecuencia", "duracion", "cantidad", "indicaciones",
+        ]
+
+
+class RecetaSerializer(serializers.ModelSerializer):
+    """Receta con sus medicamentos anidados (creación en un solo POST)."""
+
+    medicamentos = MedicamentoRecetadoSerializer(many=True)
+    profesional_nombre = serializers.CharField(source="profesional.nombre_completo", read_only=True)
+
+    class Meta:
+        model = Receta
+        fields = [
+            "id", "atencion", "profesional", "profesional_nombre",
+            "diagnostico_cie10", "observaciones", "medicamentos", "created_at",
+        ]
+        read_only_fields = ["profesional"]
+
+    def validate_medicamentos(self, value):
+        if not value:
+            raise serializers.ValidationError("La receta debe tener al menos un medicamento.")
+        return value
+
+    def validate_atencion(self, atencion):
+        if atencion.profesional_asignado_id != self.context["request"].user.id:
+            raise serializers.ValidationError("La atención no está asignada a usted.")
+        return atencion
+
+    @transaction.atomic
+    def create(self, validated_data):
+        items = validated_data.pop("medicamentos", [])
+        validated_data["profesional"] = self.context["request"].user
+        receta = Receta.objects.create(**validated_data)
+        MedicamentoRecetado.objects.bulk_create(
+            [MedicamentoRecetado(receta=receta, **i) for i in items]
+        )
+        return receta
 
 
 class ConceptoSerializer(serializers.ModelSerializer):

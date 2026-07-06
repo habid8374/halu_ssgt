@@ -23,14 +23,27 @@ def construir_rips(factura_arl) -> dict:
     trabajador = accidente.trabajador
     tenant = connection.tenant
 
+    # Diagnóstico principal codificado (CIE-10/CIE-11), tomado de la historia
+    # clínica de la atención si el médico ya lo registró.
+    cie10 = cie11 = ""
+    if factura_arl.atencion_id:
+        historia = getattr(factura_arl.atencion, "historia_clinica", None)
+        if historia is not None:
+            principal = (
+                historia.diagnosticos_cie.filter(relacion="principal").first()
+                or historia.diagnosticos_cie.first()
+            )
+            if principal is not None:
+                cie10, cie11 = principal.cie10_codigo, principal.cie11_codigo
+
     consulta = {
         "fechaInicioAtencion": str(accidente.fecha_evento),
         "codConsulta": "890201",  # consulta medicina general (parametrizable)
         "modalidadGrupoServicioTecSal": "01",
         "causaMotivoAtencion": "05" if accidente.tipo_evento == "accidente" else "06",
         # Transición CIE: ambos campos coexisten hasta cierre del cronograma.
-        "codDiagnosticoPrincipal": "",       # CIE-10 (diligencia el médico)
-        "codDiagnosticoPrincipalCIE11": "",  # CIE-11 (transición Res. 948/2026)
+        "codDiagnosticoPrincipal": cie10,       # CIE-10
+        "codDiagnosticoPrincipalCIE11": cie11,  # CIE-11 (Res. 948/2026)
         "vrServicio": float(factura_arl.valor),
         "conceptoRecaudo": "05",  # ARL
     }
