@@ -50,6 +50,13 @@ def construir_rips(factura_arl) -> dict:
                 "tipoUsuario": "10",  # cotizante ARL
                 "fechaNacimiento": str(trabajador.fecha_nacimiento or ""),
                 "codSexo": trabajador.sexo or "",
+                "codPaisResidencia": trabajador.pais_residencia or "170",
+                "codMunicipioResidencia": trabajador.municipio_dane or "",
+                "codZonaTerritorialResidencia": (
+                    {"U": "02", "R": "01"}.get(trabajador.zona_territorial, "")
+                ),
+                "incapacidad": "NO",
+                "codPaisOrigen": "170",
                 "consecutivo": 1,
                 "servicios": {"consultas": [consulta]},
             }

@@ -37,9 +37,9 @@ class EmpresaAdmin(admin.ModelAdmin):
 
 @admin.register(Trabajador)
 class TrabajadorAdmin(admin.ModelAdmin):
-    list_display = ("nombres", "apellidos", "tipo_documento", "numero_documento", "empresa", "cargo", "archivado")
+    list_display = ("primer_nombre", "primer_apellido", "tipo_documento", "numero_documento", "empresa", "cargo", "archivado")
     list_filter = ("empresa", "archivado")
-    search_fields = ("nombres", "apellidos", "numero_documento")
+    search_fields = ("primer_nombre", "primer_apellido", "numero_documento")
 
     def has_delete_permission(self, request, obj=None):
         # Retención 15 años (regla 2): archivar, nunca borrar.

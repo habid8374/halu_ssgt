@@ -24,7 +24,7 @@ class BaseAtencionTest(TenantTestCase):
         self.sede = Sede.objects.create(nombre="Sede Test")
         self.empresa = Empresa.objects.create(nombre="Empresa Test", nit="900000000-1")
         self.trabajador = Trabajador.objects.create(
-            empresa=self.empresa, numero_documento="123", nombres="Test", apellidos="Uno"
+            empresa=self.empresa, numero_documento="123", primer_nombre="Test", primer_apellido="Uno"
         )
         self.recepcion = Usuario.objects.create_user(
             email="r@t.co", password="x", nombre_completo="R", rol=Rol.RECEPCION, sede=self.sede

@@ -36,10 +36,16 @@ export default function EmpresasPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   // Formulario de nueva empresa
-  const [nombre, setNombre] = useState("");
-  const [nit, setNit] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [email, setEmail] = useState("");
+  const VACIA = {
+    nombre: "", nit: "", digito_verificacion: "",
+    actividad_economica_ciiu: "", actividad_economica_desc: "",
+    clase_riesgo: "", arl_nombre: "",
+    departamento: "", municipio: "", municipio_dane: "",
+    direccion: "", telefono: "", email: "",
+    representante_legal: "", responsable_sst: "", contacto_sst: "",
+  };
+  const [nueva, setNueva] = useState<Record<string, string>>({ ...VACIA });
+  const setN = (k: string, v: string) => setNueva((p) => ({ ...p, [k]: v }));
 
   const cargar = useCallback(async () => {
     setEmpresas(await apiFetch<Empresa[]>("/empresas/"));
@@ -64,15 +70,12 @@ export default function EmpresasPage() {
     ev.preventDefault();
     setMsg(null);
     try {
-      await apiFetch("/empresas/", {
-        method: "POST",
-        body: JSON.stringify({ nombre, nit, telefono, email }),
-      });
-      setNombre(""); setNit(""); setTelefono(""); setEmail("");
+      await apiFetch("/empresas/", { method: "POST", body: JSON.stringify(nueva) });
+      setNueva({ ...VACIA });
       setMsg("Empresa creada. Ya está disponible en Admisión.");
       void cargar();
     } catch (e) {
-      setMsg((e as Error).message.includes("nit") ? "Ya existe una empresa con ese NIT." : (e as Error).message);
+      setMsg((e as Error).message.toLowerCase().includes("nit") ? "Ya existe una empresa con ese NIT." : (e as Error).message);
     }
   }
 
@@ -112,27 +115,64 @@ export default function EmpresasPage() {
     <AppShell titulo="Empresas cliente (convenios)">
       {msg && <p className="mb-4 rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-700">{msg}</p>}
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
         {/* --------------------------- Nueva empresa --------------------------- */}
         <form onSubmit={crearEmpresa} className="h-fit rounded-xl border border-gray-200 bg-white p-5">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-teal-600">
-            Nueva empresa
+            Nueva empresa (empleador)
           </h2>
-          <label className={labelCls}>
-            Razón social
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputCls} required />
+          <label className={labelCls}>Razón social *
+            <input value={nueva.nombre} onChange={(e) => setN("nombre", e.target.value)} className={inputCls} required />
           </label>
-          <label className={`${labelCls} mt-3`}>
-            NIT
-            <input value={nit} onChange={(e) => setNit(e.target.value)} className={inputCls} placeholder="900123456-7" required />
+          <div className="mt-3 grid grid-cols-[1fr_80px] gap-3">
+            <label className={labelCls}>NIT *
+              <input value={nueva.nit} onChange={(e) => setN("nit", e.target.value)} className={inputCls} placeholder="900123456" required />
+            </label>
+            <label className={labelCls}>DV
+              <input value={nueva.digito_verificacion} onChange={(e) => setN("digito_verificacion", e.target.value)} className={inputCls} maxLength={1} placeholder="7" />
+            </label>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className={labelCls}>Código CIIU
+              <input value={nueva.actividad_economica_ciiu} onChange={(e) => setN("actividad_economica_ciiu", e.target.value)} className={inputCls} placeholder="4290" />
+            </label>
+            <label className={labelCls}>Clase de riesgo
+              <select value={nueva.clase_riesgo} onChange={(e) => setN("clase_riesgo", e.target.value)} className={inputCls}>
+                <option value="">—</option>
+                {["I", "II", "III", "IV", "V"].map((c) => <option key={c} value={c}>Clase {c}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className={`${labelCls} mt-3`}>Actividad económica (descripción)
+            <input value={nueva.actividad_economica_desc} onChange={(e) => setN("actividad_economica_desc", e.target.value)} className={inputCls} />
           </label>
-          <label className={`${labelCls} mt-3`}>
-            Teléfono
-            <input value={telefono} onChange={(e) => setTelefono(e.target.value)} className={inputCls} />
+          <label className={`${labelCls} mt-3`}>ARL
+            <input value={nueva.arl_nombre} onChange={(e) => setN("arl_nombre", e.target.value)} className={inputCls} placeholder="Positiva, Sura…" />
           </label>
-          <label className={`${labelCls} mt-3`}>
-            Correo
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className={labelCls}>Departamento
+              <input value={nueva.departamento} onChange={(e) => setN("departamento", e.target.value)} className={inputCls} />
+            </label>
+            <label className={labelCls}>Municipio
+              <input value={nueva.municipio} onChange={(e) => setN("municipio", e.target.value)} className={inputCls} />
+            </label>
+          </div>
+          <label className={`${labelCls} mt-3`}>Dirección
+            <input value={nueva.direccion} onChange={(e) => setN("direccion", e.target.value)} className={inputCls} />
+          </label>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className={labelCls}>Teléfono
+              <input value={nueva.telefono} onChange={(e) => setN("telefono", e.target.value)} className={inputCls} />
+            </label>
+            <label className={labelCls}>Correo
+              <input type="email" value={nueva.email} onChange={(e) => setN("email", e.target.value)} className={inputCls} />
+            </label>
+          </div>
+          <label className={`${labelCls} mt-3`}>Representante legal
+            <input value={nueva.representante_legal} onChange={(e) => setN("representante_legal", e.target.value)} className={inputCls} />
+          </label>
+          <label className={`${labelCls} mt-3`}>Responsable SST
+            <input value={nueva.responsable_sst} onChange={(e) => setN("responsable_sst", e.target.value)} className={inputCls} />
           </label>
           <button type="submit"
             className="mt-4 w-full rounded-lg bg-teal-600 py-2 text-sm font-semibold text-white transition hover:bg-teal-700">

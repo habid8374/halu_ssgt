@@ -48,7 +48,7 @@ class ConceptoSerializer(serializers.ModelSerializer):
 
     def get_trabajador_nombre(self, obj):
         t = obj.atencion.trabajador
-        return f"{t.nombres} {t.apellidos}"
+        return t.nombre_completo
 
     def create(self, validated_data):
         validated_data["profesional"] = self.context["request"].user

@@ -22,7 +22,7 @@ class BaseFacturacionTest(TenantTestCase):
         self.empresa = Empresa.objects.create(nombre="E", nit="900-f")
         self.otra = Empresa.objects.create(nombre="O", nit="901-f")
         self.trabajador = Trabajador.objects.create(
-            empresa=self.empresa, numero_documento="1", nombres="T", apellidos="T"
+            empresa=self.empresa, numero_documento="1", primer_nombre="T", primer_apellido="T"
         )
         self.coordinador = Usuario.objects.create_user(
             email="c@t.co", password="x", nombre_completo="C", rol=Rol.COORDINADOR
@@ -113,7 +113,7 @@ class SeparacionMotoresTest(BaseFacturacionTest):
 
     def test_atencion_ajena_al_accidente_es_rechazada(self):
         otro_t = Trabajador.objects.create(
-            empresa=self.otra, numero_documento="9", nombres="X", apellidos="X"
+            empresa=self.otra, numero_documento="9", primer_nombre="X", primer_apellido="X"
         )
         acc = AccidenteTrabajo.objects.create(
             trabajador=self.trabajador, empresa=self.empresa,

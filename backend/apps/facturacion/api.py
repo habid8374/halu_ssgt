@@ -113,7 +113,7 @@ class FacturaViewSet(viewsets.ReadOnlyModelViewSet):
             valor = tarifas.get(a.tipo_examen, Decimal("0"))
             FacturaItem.objects.create(
                 factura=factura, atencion=a,
-                descripcion=f"{a.get_tipo_examen_display()} — {a.trabajador.nombres} {a.trabajador.apellidos}",
+                descripcion=f"{a.get_tipo_examen_display()} — {a.trabajador.nombre_completo}",
                 valor=valor,
             )
             total += valor
@@ -153,7 +153,7 @@ class FacturaARLSerializer(serializers.ModelSerializer):
 
     def get_trabajador_nombre(self, obj):
         t = obj.accidente.trabajador
-        return f"{t.nombres} {t.apellidos}"
+        return t.nombre_completo
 
     def create(self, validated_data):
         validated_data["creada_por"] = self.context["request"].user

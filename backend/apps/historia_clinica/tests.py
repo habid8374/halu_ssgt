@@ -34,7 +34,7 @@ class BasePermisosTest(TenantTestCase):
         self.empresa_user = u("e@t.co", Rol.EMPRESA_CLIENTE, empresa=self.empresa)
 
         self.trabajador = Trabajador.objects.create(
-            empresa=self.empresa, numero_documento="123", nombres="Juan", apellidos="Pérez"
+            empresa=self.empresa, numero_documento="123", primer_nombre="Juan", primer_apellido="Pérez"
         )
         self.atencion = Atencion.objects.create(
             trabajador=self.trabajador, empresa=self.empresa, sede=self.sede,
@@ -106,7 +106,7 @@ class ConceptoPermisosTest(BasePermisosTest):
 
     def test_empresa_NO_ve_conceptos_de_otra_empresa(self):
         otro_t = Trabajador.objects.create(
-            empresa=self.otra_empresa, numero_documento="456", nombres="Ana", apellidos="Gil"
+            empresa=self.otra_empresa, numero_documento="456", primer_nombre="Ana", primer_apellido="Gil"
         )
         otra_a = Atencion.objects.create(
             trabajador=otro_t, empresa=self.otra_empresa, sede=self.sede,
@@ -216,7 +216,7 @@ class PsicosocialCustodiaTest(BasePermisosTest):
 
         for i in range(3):
             t = Trabajador.objects.create(
-                empresa=self.empresa, numero_documento=f"c{i}", nombres="X", apellidos="Y"
+                empresa=self.empresa, numero_documento=f"c{i}", primer_nombre="X", primer_apellido="Y"
             )
             InstrumentoPsicosocial.objects.create(
                 trabajador=t, tipo="estres", aplicado_por=self.psicologo, nivel_riesgo="medio"

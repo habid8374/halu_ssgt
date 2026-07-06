@@ -37,7 +37,7 @@ def transicionar_atencion(atencion, nuevo_estado, usuario, nota=""):
             "estado_nuevo": historial.estado_nuevo,
             "sede_id": atencion.sede_id,
             "consultorio_id": atencion.consultorio_id,
-            "trabajador_nombre": f"{atencion.trabajador.nombres} {atencion.trabajador.apellidos}",
+            "trabajador_nombre": atencion.trabajador.nombre_completo,
             "timestamp": historial.timestamp.isoformat(),
         },
     }

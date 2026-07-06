@@ -12,14 +12,52 @@ from django.utils import timezone
 # ---------------------------------------------------------------------------
 # Directorio de convenios y ubicaciones
 # ---------------------------------------------------------------------------
-class Empresa(models.Model):
-    """Empresa cliente (convenio). NO es el tenant — el tenant es la IPS."""
+class ClaseRiesgoARL(models.TextChoices):
+    """Clase de riesgo laboral (Decreto 1607/2002)."""
 
-    nombre = models.CharField(max_length=200)
-    nit = models.CharField(max_length=20)
-    direccion = models.CharField(max_length=255, blank=True)
-    telefono = models.CharField(max_length=30, blank=True)
-    email = models.EmailField(blank=True)
+    I = "I", "Clase I — Riesgo mínimo"
+    II = "II", "Clase II — Riesgo bajo"
+    III = "III", "Clase III — Riesgo medio"
+    IV = "IV", "Clase IV — Riesgo alto"
+    V = "V", "Clase V — Riesgo máximo"
+
+
+class Empresa(models.Model):
+    """
+    Empresa cliente (empleador/aportante). NO es el tenant — el tenant es la IPS.
+
+    Los campos amplían el mínimo para soportar el reporte a la ARL (FURAT) y
+    la facturación: NIT + dígito de verificación, actividad económica (CIIU),
+    clase de riesgo y ARL de afiliación.
+    """
+
+    # --- Identificación ---
+    nombre = models.CharField("Razón social", max_length=200)
+    nit = models.CharField("NIT", max_length=20)
+    digito_verificacion = models.CharField(max_length=1, blank=True, default="")
+
+    # --- Actividad y riesgo (SST / ARL) ---
+    actividad_economica_ciiu = models.CharField(
+        "Código CIIU", max_length=10, blank=True, default="",
+        help_text="Código de actividad económica (CIIU rev. 4 A.C.).",
+    )
+    actividad_economica_desc = models.CharField(max_length=200, blank=True, default="")
+    clase_riesgo = models.CharField(max_length=3, choices=ClaseRiesgoARL.choices, blank=True, default="")
+    arl_nombre = models.CharField("ARL", max_length=120, blank=True, default="")
+
+    # --- Ubicación y contacto ---
+    departamento = models.CharField(max_length=60, blank=True, default="")
+    municipio = models.CharField(max_length=80, blank=True, default="")
+    municipio_dane = models.CharField("Código DANE municipio", max_length=5, blank=True, default="")
+    direccion = models.CharField(max_length=255, blank=True, default="")
+    telefono = models.CharField(max_length=30, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+
+    # --- Responsables ---
+    representante_legal = models.CharField(max_length=150, blank=True, default="")
+    responsable_sst = models.CharField("Responsable SST", max_length=150, blank=True, default="")
+    contacto_sst = models.CharField(max_length=120, blank=True, default="")
+
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -66,31 +104,94 @@ class Consultorio(models.Model):
 
 
 class TipoDocumento(models.TextChoices):
+    """Tipos de documento (tabla oficial RIPS / interoperabilidad)."""
+
+    RC = "RC", "Registro civil"
+    TI = "TI", "Tarjeta de identidad"
     CC = "CC", "Cédula de ciudadanía"
     CE = "CE", "Cédula de extranjería"
-    TI = "TI", "Tarjeta de identidad"
     PA = "PA", "Pasaporte"
-    PEP = "PEP", "Permiso especial de permanencia"
-    PPT = "PPT", "Permiso por protección temporal"
+    CN = "CN", "Certificado de nacido vivo"
+    AS = "AS", "Adulto sin identificación"
+    MS = "MS", "Menor sin identificación"
+    PE = "PE", "Permiso especial de permanencia"
+    PT = "PT", "Permiso por protección temporal"
+    SC = "SC", "Salvoconducto"
+    DE = "DE", "Documento extranjero"
+    CD = "CD", "Carné diplomático"
+
+
+class Sexo(models.TextChoices):
+    MASCULINO = "M", "Masculino"
+    FEMENINO = "F", "Femenino"
+    INDETERMINADO = "I", "Indeterminado / Intersexual"
+
+
+class ZonaTerritorial(models.TextChoices):
+    URBANA = "U", "Urbana"
+    RURAL = "R", "Rural"
+
+
+class PertenenciaEtnica(models.TextChoices):
+    INDIGENA = "1", "Indígena"
+    ROM = "2", "ROM (gitano)"
+    RAIZAL = "3", "Raizal (San Andrés y Providencia)"
+    PALENQUERO = "4", "Palenquero de San Basilio"
+    NEGRO = "5", "Negro(a), mulato(a), afrocolombiano(a)"
+    NINGUNA = "6", "Ninguna de las anteriores"
+
+
+class TipoAfiliacion(models.TextChoices):
+    CONTRIBUTIVO = "contributivo", "Contributivo"
+    SUBSIDIADO = "subsidiado", "Subsidiado"
+    ESPECIAL = "especial", "Régimen especial o de excepción"
+    PARTICULAR = "particular", "Particular / No asegurado"
 
 
 class Trabajador(models.Model):
     """
     Trabajador atendido (paciente). Pertenece a una Empresa (convenio).
 
+    Estructura de datos alineada al conjunto mínimo interoperable
+    (Res. 866/2021) y a los campos de usuario del RIPS (Res. 948/2026):
+    nombres y apellidos separados, sexo, país/municipio/zona de residencia,
+    pertenencia étnica, tipo de afiliación y ocupación (CIUO).
+
     Retención (regla 2): no se elimina físicamente; se usa `archivado`.
     """
 
     empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name="trabajadores")
+
+    # --- Identificación (obligatorio) ---
     tipo_documento = models.CharField(max_length=4, choices=TipoDocumento.choices, default=TipoDocumento.CC)
     numero_documento = models.CharField(max_length=30)
-    nombres = models.CharField(max_length=120)
-    apellidos = models.CharField(max_length=120)
+    primer_nombre = models.CharField(max_length=60, default="")
+    segundo_nombre = models.CharField(max_length=60, blank=True, default="")
+    primer_apellido = models.CharField(max_length=60, default="")
+    segundo_apellido = models.CharField(max_length=60, blank=True, default="")
     fecha_nacimiento = models.DateField(null=True, blank=True)
-    sexo = models.CharField(max_length=1, blank=True)  # M/F/(otro), sin choices rígidos
-    cargo = models.CharField(max_length=150, blank=True)
-    telefono = models.CharField(max_length=30, blank=True)
-    email = models.EmailField(blank=True)
+    sexo = models.CharField(max_length=1, choices=Sexo.choices, blank=True, default="")
+
+    # --- Residencia (RIPS) ---
+    pais_residencia = models.CharField(max_length=3, default="170")  # 170 = Colombia (ISO 3166)
+    departamento_residencia = models.CharField(max_length=60, blank=True, default="")
+    municipio_residencia = models.CharField(max_length=80, blank=True, default="")
+    municipio_dane = models.CharField("Código DANE municipio", max_length=5, blank=True, default="")
+    zona_territorial = models.CharField(max_length=1, choices=ZonaTerritorial.choices, blank=True, default="")
+    direccion = models.CharField(max_length=255, blank=True, default="")
+
+    # --- Contacto ---
+    telefono = models.CharField(max_length=30, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+
+    # --- Caracterización / afiliación ---
+    pertenencia_etnica = models.CharField(max_length=1, choices=PertenenciaEtnica.choices, blank=True, default="")
+    tipo_afiliacion = models.CharField(max_length=15, choices=TipoAfiliacion.choices, blank=True, default="")
+    entidad_responsable_pago = models.CharField("EPS / EAPB", max_length=120, blank=True, default="")
+
+    # --- Ocupacional ---
+    cargo = models.CharField(max_length=150, blank=True, default="")
+    ocupacion_ciuo = models.CharField("Ocupación (CIUO)", max_length=10, blank=True, default="")
 
     archivado = models.BooleanField(default=False)  # soft-delete (retención 15 años)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -105,8 +206,13 @@ class Trabajador(models.Model):
             )
         ]
 
+    @property
+    def nombre_completo(self) -> str:
+        partes = [self.primer_nombre, self.segundo_nombre, self.primer_apellido, self.segundo_apellido]
+        return " ".join(p for p in partes if p)
+
     def __str__(self):
-        return f"{self.nombres} {self.apellidos} ({self.tipo_documento} {self.numero_documento})"
+        return f"{self.nombre_completo} ({self.tipo_documento} {self.numero_documento})"
 
 
 # ---------------------------------------------------------------------------

@@ -63,7 +63,7 @@ class AccidenteSerializer(serializers.ModelSerializer):
         read_only_fields = ["empresa"]
 
     def get_trabajador_nombre(self, obj):
-        return f"{obj.trabajador.nombres} {obj.trabajador.apellidos}"
+        return obj.trabajador.nombre_completo
 
     def get_reporte(self, obj):
         rep = getattr(obj, "furat", None) if obj.tipo_evento == TipoEvento.ACCIDENTE else getattr(obj, "furel", None)

@@ -41,7 +41,7 @@ class InstrumentoSerializer(serializers.ModelSerializer):
         ]
 
     def get_trabajador_nombre(self, obj):
-        return f"{obj.trabajador.nombres} {obj.trabajador.apellidos}"
+        return obj.trabajador.nombre_completo
 
     def create(self, validated_data):
         validated_data["aplicado_por"] = self.context["request"].user

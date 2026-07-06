@@ -146,7 +146,15 @@ class Command(BaseCommand):
 
         objetos_empresa = []
         for nombre, nit in empresas:
-            e, _ = Empresa.objects.get_or_create(nit=nit, defaults={"nombre": nombre})
+            e, _ = Empresa.objects.get_or_create(nit=nit, defaults={
+                "nombre": nombre, "digito_verificacion": "1",
+                "actividad_economica_ciiu": "4290", "actividad_economica_desc": "Construcción de obras de ingeniería",
+                "clase_riesgo": "V", "arl_nombre": "Positiva",
+                "departamento": "Cundinamarca", "municipio": "Bogotá D.C.", "municipio_dane": "11001",
+                "direccion": "Calle 100 # 15-20", "telefono": "6015551234",
+                "representante_legal": "Representante Legal Demo",
+                "responsable_sst": "Responsable SST Demo",
+            })
             objetos_empresa.append(e)
             # Tarifario demo del convenio.
             for tipo, valor in [
@@ -177,12 +185,19 @@ class Command(BaseCommand):
 
         objetos_trabajador = []
         for idx_empresa, doc, nombres, apellidos, cargo in trabajadores:
+            pn, _, sn = nombres.partition(" ")
+            pa, _, sa = apellidos.partition(" ")
             t, _ = Trabajador.objects.get_or_create(
                 tipo_documento="CC",
                 numero_documento=doc,
                 defaults={
-                    "empresa": objetos_empresa[idx_empresa], "nombres": nombres,
-                    "apellidos": apellidos, "cargo": cargo,
+                    "empresa": objetos_empresa[idx_empresa],
+                    "primer_nombre": pn, "segundo_nombre": sn,
+                    "primer_apellido": pa, "segundo_apellido": sa,
+                    "cargo": cargo, "sexo": "M",
+                    "fecha_nacimiento": dt.date(1990, 1, 1),
+                    "municipio_residencia": "Bogotá D.C.", "municipio_dane": "11001",
+                    "zona_territorial": "U", "tipo_afiliacion": "contributivo",
                 },
             )
             objetos_trabajador.append(t)

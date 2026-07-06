@@ -26,17 +26,41 @@ class ConsultorioSerializer(serializers.ModelSerializer):
 class EmpresaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
-        fields = ["id", "nombre", "nit", "direccion", "telefono", "email", "activo"]
+        fields = [
+            "id", "nombre", "nit", "digito_verificacion",
+            "actividad_economica_ciiu", "actividad_economica_desc",
+            "clase_riesgo", "arl_nombre",
+            "departamento", "municipio", "municipio_dane",
+            "direccion", "telefono", "email",
+            "representante_legal", "responsable_sst", "contacto_sst",
+            "activo",
+        ]
 
 
 class TrabajadorSerializer(serializers.ModelSerializer):
     empresa_nombre = serializers.CharField(source="empresa.nombre", read_only=True)
+    nombre_completo = serializers.CharField(read_only=True)
+    # Aunque el modelo tenga default="" (para migración limpia), estos son
+    # obligatorios al registrar desde la app.
+    primer_nombre = serializers.CharField(required=True, allow_blank=False, max_length=60)
+    primer_apellido = serializers.CharField(required=True, allow_blank=False, max_length=60)
+    fecha_nacimiento = serializers.DateField(required=True)
+    sexo = serializers.ChoiceField(
+        choices=[c[0] for c in Trabajador._meta.get_field("sexo").choices], required=True
+    )
 
     class Meta:
         model = Trabajador
         fields = [
-            "id", "empresa", "empresa_nombre", "tipo_documento", "numero_documento",
-            "nombres", "apellidos", "cargo", "telefono", "email",
+            "id", "empresa", "empresa_nombre", "nombre_completo",
+            "tipo_documento", "numero_documento",
+            "primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido",
+            "fecha_nacimiento", "sexo",
+            "pais_residencia", "departamento_residencia", "municipio_residencia",
+            "municipio_dane", "zona_territorial", "direccion",
+            "telefono", "email",
+            "pertenencia_etnica", "tipo_afiliacion", "entidad_responsable_pago",
+            "cargo", "ocupacion_ciuo",
         ]
 
 
@@ -61,7 +85,7 @@ class AtencionSerializer(serializers.ModelSerializer):
         read_only_fields = ["estado", "estado_actualizado_at"]
 
     def get_trabajador_nombre(self, obj):
-        return f"{obj.trabajador.nombres} {obj.trabajador.apellidos}"
+        return obj.trabajador.nombre_completo
 
 
 class CrearAtencionSerializer(serializers.ModelSerializer):
@@ -105,7 +129,7 @@ class CitaSerializer(serializers.ModelSerializer):
         read_only_fields = ["empresa", "estado", "atencion"]
 
     def get_trabajador_nombre(self, obj):
-        return f"{obj.trabajador.nombres} {obj.trabajador.apellidos}"
+        return obj.trabajador.nombre_completo
 
     def validate(self, data):
         if "trabajador" in data:

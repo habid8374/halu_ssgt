@@ -32,7 +32,10 @@ def construir_rda(atencion) -> dict:
             "type": {"coding": [{"code": trabajador.tipo_documento}]},
             "value": trabajador.numero_documento,
         }],
-        "name": [{"family": trabajador.apellidos, "given": [trabajador.nombres]}],
+        "name": [{
+            "family": " ".join(p for p in [trabajador.primer_apellido, trabajador.segundo_apellido] if p),
+            "given": [p for p in [trabajador.primer_nombre, trabajador.segundo_nombre] if p],
+        }],
         "gender": {"M": "male", "F": "female"}.get(trabajador.sexo, "unknown"),
         "birthDate": str(trabajador.fecha_nacimiento) if trabajador.fecha_nacimiento else None,
     }

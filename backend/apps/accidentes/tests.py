@@ -36,7 +36,7 @@ class BaseFase2Test(TenantTestCase):
         self.sede = Sede.objects.create(nombre="Sede T")
         self.empresa = Empresa.objects.create(nombre="Empresa T", nit="900-t")
         self.trabajador = Trabajador.objects.create(
-            empresa=self.empresa, numero_documento="1", nombres="T", apellidos="T"
+            empresa=self.empresa, numero_documento="1", primer_nombre="T", primer_apellido="T"
         )
         self.coordinador = Usuario.objects.create_user(
             email="c@t.co", password="x", nombre_completo="C", rol=Rol.COORDINADOR
