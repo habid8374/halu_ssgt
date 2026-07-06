@@ -3,14 +3,20 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
+import { imprimirConcepto } from "@/lib/conceptoPdf";
 
 interface Concepto {
   id: number;
   trabajador_nombre: string;
+  trabajador_documento?: string;
+  empresa_nombre?: string;
+  tipo_examen?: string;
   aptitud: string;
   restricciones: string;
   recomendaciones_laborales: string;
+  firmado?: boolean;
   fecha_emision: string | null;
+  vigencia_hasta?: string | null;
   profesional_nombre: string;
 }
 
@@ -53,6 +59,7 @@ export default function PortalEmpresaPage() {
                 <th className="px-4 py-3">Restricciones</th>
                 <th className="px-4 py-3">Fecha</th>
                 <th className="px-4 py-3">Profesional</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -69,6 +76,12 @@ export default function PortalEmpresaPage() {
                     <td className="px-4 py-3 text-gray-500">{c.restricciones || "—"}</td>
                     <td className="px-4 py-3 text-gray-500">{c.fecha_emision ?? "—"}</td>
                     <td className="px-4 py-3 text-gray-500">{c.profesional_nombre}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => imprimirConcepto(c)}
+                        className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-100">
+                        🖨 PDF
+                      </button>
+                    </td>
                   </tr>
                 );
               })}

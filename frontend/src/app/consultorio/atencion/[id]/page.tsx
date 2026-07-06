@@ -8,6 +8,7 @@ import OrdenesSection from "@/components/medico/OrdenesSection";
 import RecetasSection from "@/components/medico/RecetasSection";
 import type { EncabezadoImpresion } from "@/lib/imprimir";
 import { imprimirHistoriaCompleta } from "@/lib/historiaPdf";
+import { imprimirConcepto } from "@/lib/conceptoPdf";
 import { apiFetch, TIPO_EXAMEN_LABEL, type Atencion } from "@/lib/api";
 
 interface Historia {
@@ -316,10 +317,29 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
               </span>
             )}
           </div>
-          <p className="mb-4 text-xs text-gray-500">
+          <p className="mb-3 text-xs text-gray-500">
             Este es el único documento que la empresa verá en su portal (Res. 1843/2025).
             No incluye contenido de la historia clínica.
           </p>
+          {concepto.id && atencion && (
+            <button
+              onClick={() => imprimirConcepto({
+                trabajador_nombre: atencion.trabajador_nombre,
+                trabajador_documento: atencion.trabajador_documento,
+                empresa_nombre: atencion.empresa_nombre,
+                tipo_examen: atencion.tipo_examen,
+                aptitud: concepto.aptitud ?? "apto",
+                restricciones: concepto.restricciones,
+                recomendaciones_laborales: concepto.recomendaciones_laborales,
+                firmado: concepto.firmado,
+                fecha_emision: concepto.fecha_emision,
+                profesional_nombre: medicoNombre,
+              })}
+              className="mb-4 rounded-lg bg-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-300"
+            >
+              🖨 Imprimir concepto (PDF)
+            </button>
+          )}
 
           <label className={labelCls}>
             Concepto de aptitud

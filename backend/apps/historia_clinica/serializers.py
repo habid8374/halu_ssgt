@@ -150,13 +150,17 @@ class ConceptoSerializer(serializers.ModelSerializer):
     """
 
     trabajador_nombre = serializers.SerializerMethodField()
+    trabajador_documento = serializers.CharField(source="atencion.trabajador.numero_documento", read_only=True)
+    empresa_nombre = serializers.CharField(source="atencion.empresa.nombre", read_only=True)
+    tipo_examen = serializers.CharField(source="atencion.tipo_examen", read_only=True)
     profesional_nombre = serializers.CharField(source="profesional.nombre_completo", read_only=True)
 
     class Meta:
         model = ConceptoMedicoOcupacional
         fields = [
             "id", "atencion", "historia", "profesional", "profesional_nombre",
-            "trabajador_nombre", "licencia_sst", "aptitud", "restricciones",
+            "trabajador_nombre", "trabajador_documento", "empresa_nombre", "tipo_examen",
+            "licencia_sst", "aptitud", "restricciones",
             "recomendaciones_laborales", "firmado", "fecha_emision",
             "vigencia_hasta", "fecha_recomendacion", "seguimiento_completado", "created_at",
         ]

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
-import { apiFetch, ESTADO_LABEL, TIPO_EXAMEN_LABEL, type Atencion, type Estado } from "@/lib/api";
+import { apiFetch, ESTADO_LABEL, TIPO_EXAMEN_LABEL, type Atencion, type Estado, type Yo } from "@/lib/api";
+import { imprimirHistoriaCompleta } from "@/lib/historiaPdf";
 
 const norm = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
@@ -24,11 +25,14 @@ export default function HistoriasPage() {
   const [hasta, setHasta] = useState("");
   const [soloFinalizadas, setSoloFinalizadas] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [medicoNombre, setMedicoNombre] = useState("");
 
   useEffect(() => {
     apiFetch<Atencion[]>("/atenciones/")
       .then(setAtenciones)
       .catch((e) => setError((e as Error).message));
+    const raw = typeof window !== "undefined" ? localStorage.getItem("halu_yo") : null;
+    if (raw) setMedicoNombre((JSON.parse(raw) as Yo).nombre_completo ?? "");
   }, []);
 
   function limpiar() {
@@ -118,11 +122,17 @@ export default function HistoriasPage() {
                   </span>
                 </td>
                 <td className="px-4 py-2 text-gray-500">{new Date(a.created_at).toLocaleDateString("es-CO")}</td>
-                <td className="px-4 py-2 text-right">
-                  <Link href={`/consultorio/atencion/${a.id}`}
-                    className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
-                    Abrir historia
-                  </Link>
+                <td className="px-4 py-2">
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => imprimirHistoriaCompleta(a, medicoNombre).catch((e) => setError((e as Error).message))}
+                      className="rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:bg-teal-100">
+                      🖨 PDF
+                    </button>
+                    <Link href={`/consultorio/atencion/${a.id}`}
+                      className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100">
+                      Abrir
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
