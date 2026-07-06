@@ -63,27 +63,23 @@ export default function LoginPage() {
         >
           <source src="/login-bg.mp4" type="video/mp4" />
         </video>
-        {/* Degradado para que la marca se lea sobre el video */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/75 via-slate-900/15 to-transparent" />
-        <div className="absolute bottom-5 left-5 lg:bottom-12 lg:left-12">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Halu Salud Ocupacional"
-            className="h-14 w-auto drop-shadow-xl lg:h-24"
-          />
-          <h2 className="mt-3 text-xl font-bold text-white drop-shadow lg:text-3xl">
-            Halu Salud Ocupacional
-          </h2>
-          <p className="text-sm text-white/85 lg:text-base">
-            Prevención · Bienestar · Seguridad
-          </p>
-        </div>
       </section>
 
       {/* --------------------------- Formulario ---------------------------- */}
       <section className="flex flex-1 items-center justify-center bg-gray-50 px-6 py-10 lg:px-12">
         <div className="w-full max-w-sm">
+          {/* Marca del software, encima del formulario */}
+          <div className="mb-8 flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Halu Salud Ocupacional" className="h-14 w-auto lg:h-16" />
+            <div>
+              <p className="text-lg font-bold leading-tight text-gray-900 lg:text-xl">
+                Halu Salud Ocupacional
+              </p>
+              <p className="text-xs text-gray-500">Prevención · Bienestar · Seguridad</p>
+            </div>
+          </div>
+
           <h1 className="text-2xl font-bold text-gray-900">Bienvenido</h1>
           <p className="mt-1 text-sm text-gray-500">
             Ingresa con tu cuenta institucional
