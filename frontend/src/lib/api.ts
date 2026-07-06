@@ -155,6 +155,7 @@ export interface Atencion {
   estado: Estado;
   profesional_nombre: string | null;
   estado_actualizado_at: string;
+  created_at: string;
 }
 
 export const TIPO_EXAMEN_LABEL: Record<string, string> = {

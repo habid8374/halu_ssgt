@@ -34,7 +34,8 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   ],
   medico: [
     { href: "/consultorio/mi-cola", label: "Mi cola de atención", icono: "🩺" },
-    { href: "#historias", label: "Historias clínicas", icono: "📋", deshabilitado: true },
+    { href: "/consultorio/historias", label: "Historias clínicas", icono: "📋" },
+    { href: "/consultorio/agenda", label: "Mi agenda", icono: "📅" },
   ],
   coordinador: [
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },

@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
 import { useAtencionesSocket, type EventoAtencion } from "@/hooks/useAtencionesSocket";
+import { campanilla, anunciar, activarAudio } from "@/lib/aviso";
 
 interface Llamado {
   atencion_id: number;
@@ -18,6 +19,7 @@ interface Llamado {
  */
 export default function PantallaPage({ params }: { params: { sede: string } }) {
   const [llamados, setLlamados] = useState<Llamado[]>([]);
+  const [audio, setAudio] = useState(false);
 
   const onEvento = useCallback((e: EventoAtencion) => {
     if (e.type === "llamado" && e.trabajador_nombre) {
@@ -32,6 +34,10 @@ export default function PantallaPage({ params }: { params: { sede: string } }) {
           ...prev.filter((l) => l.atencion_id !== e.atencion_id),
         ].slice(0, 6),
       );
+      // Campanilla + anuncio por voz (si el operador activó el sonido).
+      campanilla();
+      const destino = e.consultorio_nombre ? `. Pase a ${e.consultorio_nombre}` : "";
+      anunciar(`${e.trabajador_nombre}${destino}`);
     }
   }, []);
 
@@ -46,10 +52,20 @@ export default function PantallaPage({ params }: { params: { sede: string } }) {
           <img src="/logo.png" alt="Halu" className="h-11 w-auto" />
           <p className="text-lg font-bold">Halu Salud Ocupacional</p>
         </div>
-        <span className={`flex items-center gap-2 text-sm ${conectado ? "text-emerald-400" : "text-red-400"}`}>
-          <span className={`h-2.5 w-2.5 rounded-full ${conectado ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
-          {conectado ? "En vivo" : "Reconectando…"}
-        </span>
+        <div className="flex items-center gap-4">
+          {!audio && (
+            <button
+              onClick={() => { activarAudio(); setAudio(true); campanilla(); anunciar("Sonido activado"); }}
+              className="rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-400"
+            >
+              🔊 Activar sonido
+            </button>
+          )}
+          <span className={`flex items-center gap-2 text-sm ${conectado ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${conectado ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
+            {conectado ? "En vivo" : "Reconectando…"}
+          </span>
+        </div>
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center">

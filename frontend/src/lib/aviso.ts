@@ -46,6 +46,51 @@ export function beep() {
   }
 }
 
+/** Campanilla de llamado (tres notas), para la pantalla de sala de espera. */
+export function campanilla() {
+  const ac = contexto();
+  if (!ac) return;
+  try {
+    if (ac.state === "suspended") void ac.resume();
+    const t = ac.currentTime;
+    [659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      const inicio = t + i * 0.18;
+      gain.gain.setValueAtTime(0, inicio);
+      gain.gain.linearRampToValueAtTime(0.18, inicio + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.5);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(inicio);
+      osc.stop(inicio + 0.55);
+    });
+  } catch {
+    /* silencioso */
+  }
+}
+
+/** Anuncia por voz (Web Speech API) el turno llamado. Falla en silencio. */
+export function anunciar(texto: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = "es-CO";
+    u.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* silencioso */
+  }
+}
+
+/** Reanuda el contexto de audio tras un gesto del usuario (kiosco/TV). */
+export function activarAudio() {
+  const ac = contexto();
+  if (ac && ac.state === "suspended") void ac.resume();
+}
+
 const CLAVE = "halu_sonido";
 export function sonidoActivo(): boolean {
   if (typeof window === "undefined") return true;
