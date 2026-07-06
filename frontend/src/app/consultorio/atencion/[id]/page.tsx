@@ -7,6 +7,7 @@ import DiagnosticosSection from "@/components/medico/DiagnosticosSection";
 import OrdenesSection from "@/components/medico/OrdenesSection";
 import RecetasSection from "@/components/medico/RecetasSection";
 import type { EncabezadoImpresion } from "@/lib/imprimir";
+import { imprimirHistoriaCompleta } from "@/lib/historiaPdf";
 import { apiFetch, TIPO_EXAMEN_LABEL, type Atencion } from "@/lib/api";
 
 interface Historia {
@@ -216,6 +217,20 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
           title="Resumen Digital de Atención — FHIR (Res. 866/2021)"
         >
           ⬇ RDA (FHIR)
+        </button>
+        <button
+          onClick={async () => {
+            if (!atencion) return;
+            try {
+              await imprimirHistoriaCompleta(atencion, medicoNombre);
+            } catch (e) {
+              setMsg({ tipo: "error", texto: (e as Error).message });
+            }
+          }}
+          className="ml-2 rounded-lg bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-700"
+          title="Imprimir o guardar como PDF la historia clínica completa"
+        >
+          🖨 Imprimir historia (PDF)
         </button>
       </div>
 

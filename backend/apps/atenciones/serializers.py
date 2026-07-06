@@ -70,6 +70,7 @@ class AtencionSerializer(serializers.ModelSerializer):
     """Tarjeta del tablero. Sin datos clínicos: solo identificación y flujo."""
 
     trabajador_nombre = serializers.SerializerMethodField()
+    trabajador_documento = serializers.CharField(source="trabajador.numero_documento", read_only=True)
     empresa_nombre = serializers.CharField(source="empresa.nombre", read_only=True)
     consultorio_nombre = serializers.CharField(source="consultorio.nombre", read_only=True, default=None)
     profesional_nombre = serializers.CharField(
@@ -79,7 +80,8 @@ class AtencionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Atencion
         fields = [
-            "id", "trabajador", "trabajador_nombre", "empresa", "empresa_nombre",
+            "id", "trabajador", "trabajador_nombre", "trabajador_documento",
+            "empresa", "empresa_nombre",
             "sede", "consultorio", "consultorio_nombre", "tipo_examen", "estado",
             "profesional_asignado", "profesional_nombre",
             "created_at", "estado_actualizado_at",

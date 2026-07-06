@@ -148,6 +148,7 @@ export const SIGUIENTES: Record<Estado, Estado[]> = {
 export interface Atencion {
   id: number;
   trabajador_nombre: string;
+  trabajador_documento?: string;
   empresa_nombre: string;
   sede: number;
   consultorio_nombre: string | null;
