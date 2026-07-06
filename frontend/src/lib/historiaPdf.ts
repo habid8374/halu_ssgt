@@ -1,5 +1,6 @@
 import { apiFetch, TIPO_EXAMEN_LABEL, type Atencion } from "@/lib/api";
 import { imprimirDocumento, esc, type EncabezadoImpresion } from "@/lib/imprimir";
+import { cargarMembrete } from "@/lib/membrete";
 
 /**
  * Compone e imprime la HISTORIA CLÍNICA COMPLETA de una atención (historia +
@@ -41,6 +42,7 @@ export async function imprimirHistoriaCompleta(atencion: Atencion, medicoNombre:
     documento: atencion.trabajador_documento,
     empresa: atencion.empresa_nombre,
     profesional: medicoNombre,
+    membrete: await cargarMembrete(),
   };
 
   let cuerpo = `<h2>Atención</h2><div class="item">

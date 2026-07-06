@@ -3,12 +3,30 @@ from rest_framework import serializers
 from .models import (
     Atencion,
     Cita,
+    ConfiguracionIPS,
     Consultorio,
     Empresa,
     HistorialEstado,
     Sede,
     Trabajador,
 )
+
+
+class ConfiguracionIPSSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfiguracionIPS
+        fields = [
+            "razon_social", "nit", "codigo_habilitacion",
+            "direccion", "ciudad", "telefono", "email", "logo_data_uri",
+        ]
+
+    def validate_logo_data_uri(self, v):
+        if v and not v.startswith("data:image/"):
+            raise serializers.ValidationError("El logo debe ser una imagen (data URI).")
+        # Límite ~600 KB en base64 para no inflar la base de datos.
+        if v and len(v) > 800_000:
+            raise serializers.ValidationError("El logo es demasiado grande (use una imagen más liviana).")
+        return v
 
 
 class SedeSerializer(serializers.ModelSerializer):

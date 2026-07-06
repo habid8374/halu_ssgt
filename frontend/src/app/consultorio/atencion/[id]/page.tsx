@@ -6,7 +6,8 @@ import AppShell from "@/components/AppShell";
 import DiagnosticosSection from "@/components/medico/DiagnosticosSection";
 import OrdenesSection from "@/components/medico/OrdenesSection";
 import RecetasSection from "@/components/medico/RecetasSection";
-import type { EncabezadoImpresion } from "@/lib/imprimir";
+import type { EncabezadoImpresion, Membrete } from "@/lib/imprimir";
+import { cargarMembrete } from "@/lib/membrete";
 import { imprimirHistoriaCompleta } from "@/lib/historiaPdf";
 import { imprimirConcepto } from "@/lib/conceptoPdf";
 import { apiFetch, TIPO_EXAMEN_LABEL, type Atencion } from "@/lib/api";
@@ -91,17 +92,21 @@ export default function AtencionPage({ params }: { params: { id: string } }) {
   const [msg, setMsg] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [medicoNombre, setMedicoNombre] = useState("");
+  const [membrete, setMembrete] = useState<Membrete | undefined>(undefined);
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("halu_yo") : null;
     if (raw) setMedicoNombre((JSON.parse(raw) as { nombre_completo?: string }).nombre_completo ?? "");
+    void cargarMembrete().then(setMembrete);
   }, []);
 
   const encabezado: EncabezadoImpresion = {
     ips: typeof window !== "undefined" ? window.location.hostname : "IPS",
     paciente: atencion?.trabajador_nombre ?? "",
+    documento: atencion?.trabajador_documento,
     empresa: atencion?.empresa_nombre ?? undefined,
     profesional: medicoNombre,
+    membrete,
   };
 
   const cargar = useCallback(async () => {

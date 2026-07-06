@@ -39,6 +39,7 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
   ],
   coordinador: [
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },
+    { href: "/gerencia/ips", label: "Configuración IPS", icono: "🏷️" },
     { href: "/gerencia/personal", label: "Personal (equipo)", icono: "👥" },
     { href: "/gerencia/consultorios", label: "Sedes y consultorios", icono: "🚪" },
     { href: "/gerencia/cups", label: "Catálogo CUPS", icono: "📚" },

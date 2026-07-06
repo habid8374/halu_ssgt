@@ -9,6 +9,33 @@ from django.db import models
 from django.utils import timezone
 
 
+class ConfiguracionIPS(models.Model):
+    """
+    Datos de la IPS para el MEMBRETE de los documentos (historia, certificado
+    de aptitud, órdenes, recetas): razón social, NIT, código de habilitación
+    (REPS), dirección/contacto y logo. Singleton por esquema (una IPS por
+    tenant). El logo se guarda como data URI (base64) para imprimirse sin
+    depender del almacenamiento de medios.
+    """
+
+    razon_social = models.CharField(max_length=200, blank=True, default="")
+    nit = models.CharField(max_length=25, blank=True, default="")
+    codigo_habilitacion = models.CharField(max_length=40, blank=True, default="", help_text="Código de habilitación REPS")
+    direccion = models.CharField(max_length=255, blank=True, default="")
+    ciudad = models.CharField(max_length=120, blank=True, default="")
+    telefono = models.CharField(max_length=60, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+    logo_data_uri = models.TextField(blank=True, default="", help_text="Logo en base64 (data URI).")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuración de la IPS"
+        verbose_name_plural = "Configuración de la IPS"
+
+    def __str__(self):
+        return self.razon_social or "Configuración de la IPS"
+
+
 # ---------------------------------------------------------------------------
 # Directorio de convenios y ubicaciones
 # ---------------------------------------------------------------------------

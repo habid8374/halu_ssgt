@@ -266,6 +266,33 @@ class CupsCatalogoTest(BasePermisosTest):
         self.assertTrue(CodigoCups.objects.filter(codigo="999998").exists())
 
 
+class ConfiguracionIPSTest(BasePermisosTest):
+    """Membrete de la IPS: lectura para operativos, edición solo coordinador."""
+
+    URL = "/api/configuracion/"
+
+    def test_operativos_leen_configuracion(self):
+        for user in (self.medico, self.recepcion, self.empresa_user):
+            self.assertEqual(self._get(user, self.URL).status_code, 200)
+
+    def test_coordinador_edita_membrete(self):
+        self.client.force_login(self.coordinador)
+        r = self.client.patch(self.URL, {"codigo_habilitacion": "1100112345", "razon_social": "IPS Salud SAS"},
+                              content_type="application/json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.json()["codigo_habilitacion"], "1100112345")
+
+    def test_recepcion_no_edita_membrete(self):
+        self.client.force_login(self.recepcion)
+        r = self.client.patch(self.URL, {"razon_social": "X"}, content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+
+    def test_logo_debe_ser_imagen(self):
+        self.client.force_login(self.coordinador)
+        r = self.client.patch(self.URL, {"logo_data_uri": "no-es-imagen"}, content_type="application/json")
+        self.assertEqual(r.status_code, 400)
+
+
 class CumsCatalogoTest(BasePermisosTest):
     """Vademécum CUMS: búsqueda (roles operativos) e importación (coordinador)."""
 

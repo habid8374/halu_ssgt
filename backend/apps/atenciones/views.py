@@ -1,7 +1,9 @@
+from django.db import connection
 from rest_framework import status, viewsets
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.usuarios.permissions import (
     EsRecepcion,
@@ -15,6 +17,7 @@ from apps.usuarios.roles import Rol
 from .models import (
     Atencion,
     Cita,
+    ConfiguracionIPS,
     Consultorio,
     Empresa,
     Sede,
@@ -24,6 +27,7 @@ from .models import (
 from .serializers import (
     AtencionSerializer,
     CitaSerializer,
+    ConfiguracionIPSSerializer,
     ConsultorioSerializer,
     CrearAtencionSerializer,
     EmpresaSerializer,
@@ -33,6 +37,40 @@ from .serializers import (
     TransicionSerializer,
 )
 from .services import difundir_atencion_creada, transicionar_atencion
+
+
+class ConfiguracionIPSView(APIView):
+    """
+    Membrete de la IPS para los documentos. Lectura para cualquier usuario
+    autenticado (lo necesitan médico y empresa al imprimir); edición solo del
+    coordinador. Singleton por esquema; se auto-rellena con los datos del
+    tenant la primera vez.
+    """
+
+    def _obtener(self):
+        cfg = ConfiguracionIPS.objects.first()
+        if cfg is None:
+            tenant = getattr(connection, "tenant", None)
+            cfg = ConfiguracionIPS.objects.create(
+                razon_social=getattr(tenant, "nombre", "") or "",
+                nit=getattr(tenant, "nit", "") or "",
+                codigo_habilitacion=getattr(tenant, "codigo_reps", "") or "",
+            )
+        return cfg
+
+    def get(self, request):
+        if not (request.user and request.user.is_authenticated and request.user.rol):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return Response(ConfiguracionIPSSerializer(self._obtener()).data)
+
+    def patch(self, request):
+        if not (request.user and request.user.is_authenticated and request.user.rol == Rol.COORDINADOR):
+            return Response({"detail": "Solo el coordinador configura la IPS."}, status=status.HTTP_403_FORBIDDEN)
+        cfg = self._obtener()
+        serializer = ConfiguracionIPSSerializer(cfg, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class SedeViewSet(viewsets.ModelViewSet):

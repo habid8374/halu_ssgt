@@ -1,5 +1,6 @@
 import { TIPO_EXAMEN_LABEL } from "@/lib/api";
 import { imprimirDocumento, esc, type EncabezadoImpresion } from "@/lib/imprimir";
+import { cargarMembrete } from "@/lib/membrete";
 
 /**
  * Certificado de aptitud médico ocupacional en formato oficial, para entregar
@@ -31,7 +32,7 @@ const COLOR: Record<string, string> = {
   apto: "#059669", apto_restricciones: "#b45309", no_apto: "#dc2626", aplazado: "#6b7280",
 };
 
-export function imprimirConcepto(c: ConceptoImprimible) {
+export async function imprimirConcepto(c: ConceptoImprimible) {
   const enc: EncabezadoImpresion = {
     ips: typeof window !== "undefined" ? window.location.hostname : "IPS",
     paciente: c.trabajador_nombre,
@@ -39,6 +40,7 @@ export function imprimirConcepto(c: ConceptoImprimible) {
     empresa: c.empresa_nombre,
     profesional: c.profesional_nombre,
     fecha: c.fecha_emision ?? new Date().toLocaleDateString("es-CO"),
+    membrete: await cargarMembrete(),
   };
   const color = COLOR[c.aptitud] ?? "#111";
 

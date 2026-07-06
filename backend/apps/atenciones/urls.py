@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from . import views
@@ -12,4 +13,6 @@ router.register("atenciones", views.AtencionViewSet, basename="atencion")
 router.register("citas", views.CitaViewSet, basename="cita")
 router.register("me", views.MeView, basename="me")
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path("configuracion/", views.ConfiguracionIPSView.as_view(), name="configuracion-ips"),
+]

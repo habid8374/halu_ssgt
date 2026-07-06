@@ -3,6 +3,17 @@
  * un formato limpio y lanza el diálogo de impresión del navegador — sin
  * dependencias externas y sin exigir comandos al usuario.
  */
+export interface Membrete {
+  razon_social: string;
+  nit: string;
+  codigo_habilitacion: string;
+  direccion: string;
+  ciudad: string;
+  telefono: string;
+  email: string;
+  logo_data_uri: string;
+}
+
 export interface EncabezadoImpresion {
   ips: string;
   paciente: string;
@@ -10,6 +21,28 @@ export interface EncabezadoImpresion {
   empresa?: string;
   profesional?: string;
   fecha?: string;
+  membrete?: Membrete;
+}
+
+function membreteHtml(enc: EncabezadoImpresion): string {
+  const m = enc.membrete;
+  if (!m || !m.razon_social) {
+    return `<h1>${esc(enc.ips)}</h1>`;
+  }
+  const linea2 = [m.nit ? `NIT ${esc(m.nit)}` : "", m.codigo_habilitacion ? `Habilitación ${esc(m.codigo_habilitacion)}` : ""]
+    .filter(Boolean).join(" · ");
+  const linea3 = [m.direccion, m.ciudad, m.telefono, m.email].filter(Boolean).map(esc).join(" · ");
+  const logo = m.logo_data_uri
+    ? `<img src="${m.logo_data_uri}" alt="" style="height:56px;width:auto;object-fit:contain" />`
+    : "";
+  return `<div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #0f766e;padding-bottom:10px">
+    ${logo}
+    <div>
+      <h1 style="margin:0">${esc(m.razon_social)}</h1>
+      ${linea2 ? `<div class="ips">${linea2}</div>` : ""}
+      ${linea3 ? `<div class="ips">${linea3}</div>` : ""}
+    </div>
+  </div>`;
 }
 
 export function imprimirDocumento(
@@ -38,8 +71,8 @@ export function imprimirDocumento(
   .firma div { border-top: 1px solid #333; width: 260px; padding-top: 4px; }
   @media print { body { margin: 12mm; } }
 </style></head><body>
-<h1>${enc.ips}</h1>
-<div class="ips">${titulo}</div>
+${membreteHtml(enc)}
+<div class="ips" style="margin-top:6px">${titulo}</div>
 <div class="datos">
   <span><b>Paciente:</b> ${enc.paciente}</span>
   ${enc.documento ? `<span><b>Documento:</b> ${enc.documento}</span>` : ""}
