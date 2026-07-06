@@ -39,6 +39,6 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         etiquetas = dict(Rol.choices)
         return Response(
             [{"valor": r, "etiqueta": etiquetas[r]} for r in
-             [Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR, Rol.EMPRESA_CLIENTE]
+             [Rol.RECEPCION, Rol.MEDICO, Rol.TECNICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR, Rol.EMPRESA_CLIENTE]
              if r in ROLES_GESTIONABLES]
         )

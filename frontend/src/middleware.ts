@@ -17,6 +17,7 @@ import type { NextRequest } from "next/server";
 const HOME_POR_ROL: Record<string, string> = {
   recepcion: "/recepcion",
   medico: "/consultorio/mi-cola",
+  tecnico: "/estaciones",
   coordinador: "/gerencia",
   empresa_cliente: "/portal-empresa",
   psicologo_sst: "/psicosocial",
@@ -27,6 +28,7 @@ const HOME_POR_ROL: Record<string, string> = {
 const ROLES_POR_RUTA: Array<[string, string[]]> = [
   ["/recepcion", ["recepcion"]],
   ["/consultorio", ["medico"]],
+  ["/estaciones", ["tecnico"]],
   ["/gerencia", ["coordinador"]],
   ["/portal-empresa", ["empresa_cliente"]],
   ["/psicosocial", ["psicologo_sst"]],
@@ -73,6 +75,8 @@ export const config = {
     "/login",
     "/recepcion/:path*",
     "/consultorio/:path*",
+    "/estaciones/:path*",
+    "/estaciones",
     "/gerencia/:path*",
     "/portal-empresa/:path*",
     "/psicosocial/:path*",

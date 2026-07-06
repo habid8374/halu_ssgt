@@ -9,6 +9,7 @@ import { getSesion, logout, type Yo } from "@/lib/api";
 const ROL_LABEL: Record<string, string> = {
   recepcion: "Recepción",
   medico: "Médico ocupacional",
+  tecnico: "Técnico de apoyo diagnóstico",
   psicologo_sst: "Psicólogo SST",
   coordinador: "Coordinación",
   empresa_cliente: "Empresa cliente",
@@ -36,6 +37,9 @@ const NAV_POR_ROL: Record<string, ItemNav[]> = {
     { href: "/consultorio/mi-cola", label: "Mi cola de atención", icono: "🩺" },
     { href: "/consultorio/historias", label: "Historias clínicas", icono: "📋" },
     { href: "/consultorio/agenda", label: "Mi agenda", icono: "📅" },
+  ],
+  tecnico: [
+    { href: "/estaciones", label: "Mi cola de pruebas", icono: "🧪" },
   ],
   coordinador: [
     { href: "/gerencia", label: "Tablero de sedes", icono: "🏥" },

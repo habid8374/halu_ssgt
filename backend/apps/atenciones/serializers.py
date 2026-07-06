@@ -158,18 +158,25 @@ class PruebaAtencionSerializer(serializers.ModelSerializer):
 
     archivo_url = serializers.SerializerMethodField()
     tipo_prueba_label = serializers.CharField(source="get_tipo_prueba_display", read_only=True)
+    trabajador_nombre = serializers.SerializerMethodField()
+    trabajador_documento = serializers.CharField(source="atencion.trabajador.numero_documento", read_only=True)
+    empresa_nombre = serializers.CharField(source="atencion.empresa.nombre", read_only=True)
 
     class Meta:
         model = PruebaAtencion
         fields = [
             "id", "atencion", "tipo_prueba", "tipo_prueba_label", "detalle",
             "estado", "resultado", "resumen", "archivo", "archivo_url",
+            "trabajador_nombre", "trabajador_documento", "empresa_nombre",
             "realizada_por", "realizada_at", "created_at",
         ]
         read_only_fields = ["realizada_por", "realizada_at", "archivo_url"]
 
     def get_archivo_url(self, obj):
         return obj.archivo.url if obj.archivo else None
+
+    def get_trabajador_nombre(self, obj):
+        return obj.atencion.trabajador.nombre_completo
 
 
 class AtencionSerializer(serializers.ModelSerializer):

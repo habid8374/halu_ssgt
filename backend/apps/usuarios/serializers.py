@@ -16,7 +16,7 @@ from .roles import Rol
 # Roles que un coordinador puede dar de alta desde la app. `admin_sistema`
 # queda reservado a infraestructura (superusuario/bootstrap), no se crea aquí.
 ROLES_GESTIONABLES = {
-    Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR, Rol.EMPRESA_CLIENTE,
+    Rol.RECEPCION, Rol.MEDICO, Rol.TECNICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR, Rol.EMPRESA_CLIENTE,
 }
 # Roles clínicos que llevan ficha de Profesional (y licencia SST).
 ROLES_CLINICOS = {Rol.MEDICO: TipoProfesional.MEDICO, Rol.PSICOLOGO_SST: TipoProfesional.PSICOLOGO}
@@ -93,7 +93,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         rol = data.get("rol", getattr(self.instance, "rol", None))
         sede = data.get("sede", getattr(self.instance, "sede", None))
         empresa = data.get("empresa", getattr(self.instance, "empresa", None))
-        if rol in {Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST} and sede is None:
+        if rol in {Rol.RECEPCION, Rol.MEDICO, Rol.TECNICO, Rol.PSICOLOGO_SST} and sede is None:
             raise serializers.ValidationError({"sede": "Este rol requiere una sede."})
         if rol == Rol.EMPRESA_CLIENTE and empresa is None:
             raise serializers.ValidationError({"empresa": "El portal de empresa requiere una empresa asociada."})

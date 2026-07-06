@@ -410,11 +410,11 @@ class ProfesiogramaViewSet(viewsets.ModelViewSet):
 
 class PuedeGestionarPruebas(BasePermission):
     """
-    Estaciones del circuito: recepción (triaje de su sede), médico (sus
-    atenciones), psicólogo y coordinador. Empresa_cliente nunca.
+    Estaciones del circuito: técnico de apoyo (su sede), recepción (triaje de
+    su sede), médico (sus atenciones), psicólogo y coordinador. Empresa nunca.
     """
 
-    ROLES = {Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR}
+    ROLES = {Rol.TECNICO, Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST, Rol.COORDINADOR}
 
     def has_permission(self, request, view):
         u = request.user
@@ -429,14 +429,27 @@ class PruebaAtencionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         u = self.request.user
-        qs = PruebaAtencion.objects.select_related("atencion").order_by("created_at")
-        if u.rol == Rol.RECEPCION:
+        qs = PruebaAtencion.objects.select_related(
+            "atencion", "atencion__trabajador", "atencion__empresa"
+        ).order_by("created_at")
+        if u.rol in {Rol.RECEPCION, Rol.TECNICO}:
             qs = qs.filter(atencion__sede=u.sede)
         elif u.rol == Rol.MEDICO:
             qs = qs.filter(atencion__profesional_asignado=u)
         # coordinador y psicólogo: dentro del tenant (sin filtro extra aquí).
         atencion_id = self.request.query_params.get("atencion")
-        return qs.filter(atencion_id=atencion_id) if atencion_id else qs
+        if atencion_id:
+            qs = qs.filter(atencion_id=atencion_id)
+        estado = self.request.query_params.get("estado")
+        if estado:
+            qs = qs.filter(estado=estado)
+        tipo = self.request.query_params.get("tipo")
+        if tipo:
+            qs = qs.filter(tipo_prueba=tipo)
+        # El técnico no opera la estación médica ni la psicológica.
+        if u.rol == Rol.TECNICO:
+            qs = qs.exclude(tipo_prueba__in=["medicina", "psicologia"])
+        return qs
 
     def perform_update(self, serializer):
         from django.utils import timezone

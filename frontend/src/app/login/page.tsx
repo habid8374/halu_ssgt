@@ -7,6 +7,7 @@ import { apiFetch, login, setYo, type Yo } from "@/lib/api";
 const RUTA_POR_ROL: Record<string, string> = {
   recepcion: "/recepcion",
   medico: "/consultorio/mi-cola",
+  tecnico: "/estaciones",
   coordinador: "/gerencia",
   empresa_cliente: "/portal-empresa",
   psicologo_sst: "/psicosocial",

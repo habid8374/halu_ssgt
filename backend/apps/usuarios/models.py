@@ -65,7 +65,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         # Coherencia de scope según rol.
         if self.rol == Rol.EMPRESA_CLIENTE and self.empresa_id is None:
             raise ValidationError("empresa_cliente requiere una empresa asociada.")
-        if self.rol in {Rol.RECEPCION, Rol.MEDICO, Rol.PSICOLOGO_SST} and self.sede_id is None:
+        if self.rol in {Rol.RECEPCION, Rol.MEDICO, Rol.TECNICO, Rol.PSICOLOGO_SST} and self.sede_id is None:
             raise ValidationError("Este rol requiere una sede asociada.")
 
 

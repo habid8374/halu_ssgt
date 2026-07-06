@@ -24,13 +24,14 @@ interface Usuario {
 
 const ROLES = [
   ["medico", "Médico ocupacional"],
+  ["tecnico", "Técnico de apoyo diagnóstico"],
   ["psicologo_sst", "Psicólogo SST"],
   ["recepcion", "Recepción / Admisión"],
   ["coordinador", "Coordinador / Gerencia"],
   ["empresa_cliente", "Empresa cliente (portal)"],
 ] as const;
 const CLINICOS = new Set(["medico", "psicologo_sst"]);
-const CON_SEDE = new Set(["medico", "psicologo_sst", "recepcion"]);
+const CON_SEDE = new Set(["medico", "psicologo_sst", "recepcion", "tecnico"]);
 
 const inputCls =
   "mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:outline-none";

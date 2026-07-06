@@ -10,6 +10,7 @@ from django.db import models
 class Rol(models.TextChoices):
     RECEPCION = "recepcion", "Recepción / Admisión"
     MEDICO = "medico", "Médico ocupacional"
+    TECNICO = "tecnico", "Técnico de apoyo diagnóstico"
     PSICOLOGO_SST = "psicologo_sst", "Psicólogo SST"
     COORDINADOR = "coordinador", "Coordinador / Gerencia IPS"
     EMPRESA_CLIENTE = "empresa_cliente", "Empresa cliente (portal externo)"
